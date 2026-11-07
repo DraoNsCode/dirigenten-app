@@ -243,3 +243,11 @@ textarea { width: 100%; min-height: 84px; padding: 10px 12px; border: 1px solid 
 .row .main { cursor: pointer; }
 .selectbox.empty-val { border-style: dashed; border-color: var(--dash); background: transparent; color: var(--muted); }
 .selectbox span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Querformat-Hinweis auf dem Handy */
+.hochkant {
+  position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
+  background: var(--bg); color: var(--ink); text-align: center; padding: 24px;
+}
+.hochkant svg { color: var(--label); }
+.hochkant p { margin: 0; font-size: 17px; font-weight: 500; }
