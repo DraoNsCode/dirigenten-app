@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import Anmeldung from './Anmeldung'
@@ -56,7 +56,16 @@ function Hauptansicht({ email }: { email: string }) {
   const [woche, setWoche] = useState(0)
   const [lieder, setLieder] = useState<LiederEinstellung>(LIEDER_ANFANG)
 
+  const ansicht = useRef<HTMLElement>(null)
+  const aktuell = useRef({ reiter, stapel })
+  aktuell.current = { reiter, stapel }
+
+  // Erneutes Tippen auf den aktiven Reiter führt ganz nach oben
   const wechsleReiter = useCallback((r: Reiter) => {
+    if (r === aktuell.current.reiter && aktuell.current.stapel.length === 1) {
+      ansicht.current?.scrollTo({ top: 0, behavior: 'smooth' })
+      return
+    }
     setReiter(r)
     setStapel([START[r]])
   }, [])
@@ -86,7 +95,7 @@ function Hauptansicht({ email }: { email: string }) {
     <NavKontext.Provider value={nav}>
       <div className="app">
         {/* key: neue Ansicht beginnt oben */}
-        <main className="view" key={`${stapel.length}-${oben.v}`}>
+        <main className="view" key={`${stapel.length}-${oben.v}`} ref={ansicht}>
           {oben.v === 'woche' && <Woche />}
           {oben.v === 'suche' && <Suche evId={oben.ev} />}
           {oben.v === 'uebernehmen' && <Uebernehmen evId={oben.ev} />}

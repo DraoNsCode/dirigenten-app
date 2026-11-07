@@ -1,12 +1,17 @@
 import { useState } from 'react'
 import { Gesungen, HinweisMarke, Kopf, Zurueck } from '../bausteine'
-import { kennung, normal, STATUS_TEXT, sucheLieder, useDaten, type Lied } from '../daten'
+import { kennung, normal, STATUS_RANG, STATUS_TEXT, sucheLieder, useDaten, type Lied } from '../daten'
 import { ereignisAusId, ereignisseDerWoche, ereignisTitel, kurzDatum, montagVon, terminKurz, type Ereignis } from '../kalender'
 import { useMeldung } from '../meldung'
 import { Haken, Lupe, Plus } from '../symbole'
 
 // Lied für einen Gottesdienst eintragen oder für die Probe vormerken.
 // Für Gottesdienste stehen nur erlernte Lieder zur Auswahl; die anderen erscheinen ausgegraut.
+// Beim Gottesdienst stehen erlernte Lieder oben, dann in Arbeit, unten unbekannte (Daniel, 7.11.2026) –
+// sowohl bei den Liedern aus der Probe als auch in den Suchtreffern.
+
+const rang = (l: Lied) => STATUS_RANG[l.status] ?? 9
+const nachStatus = (a: Lied, b: Lied) => rang(a) - rang(b)
 
 export default function Suche({ evId }: { evId: string }) {
   const daten = useDaten()
@@ -22,8 +27,12 @@ export default function Suche({ evId }: { evId: string }) {
     .map((id) => daten.lieder.get(id))
     .filter((l): l is Lied => !!l)
     .filter((l) => !q || normal(l.titel).replace(/\s/g, '').includes(q) || normal(l.kuerzel + l.nummer) === q || String(l.nummer) === q)
+    .sort(nachStatus)
 
-  const treffer = sucheLieder(daten.liederListe, eingabe, 40)
+  // Treffer: bei der Probe in Such-Reihenfolge, beim Gottesdienst zuerst nach Status (sortieren ist stabil)
+  const treffer = istProbe
+    ? sucheLieder(daten.liederListe, eingabe, 40)
+    : sucheLieder(daten.liederListe, eingabe).sort(nachStatus).slice(0, 40)
 
   return (
     <>
