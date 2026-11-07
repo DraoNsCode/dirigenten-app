@@ -6,7 +6,10 @@ import { useMeldung } from './meldung'
 
 export type Lied = Zeile<'lieder'>
 export type Thema = Zeile<'kategorien'>
+export type Person = Zeile<'dirigenten'>
 export type Eintrag = Pick<Zeile<'eintraege'>, 'datum' | 'termin' | 'lied_id' | 'erstellt_am'>
+
+export type LiedAenderung = Partial<Pick<Lied, 'status' | 'dirigent_id' | 'klavierspieler_id'>>
 
 type Stand = { art: 'laedt' } | { art: 'bereit' } | { art: 'fehler'; text: string }
 
@@ -23,6 +26,8 @@ type DatenKontext = {
   liederListe: Lied[]
   /** Themen (in der Datenbank: kategorien), in Anzeigereihenfolge */
   themen: Thema[]
+  dirigenten: Person[]
+  klavierspieler: Person[]
   /** Lied-IDs je Ereignis-Kennung, in der Reihenfolge des Eintragens */
   proEreignis: Map<string, number[]>
   /** Ereignis-Kennungen, zu denen es Einträge gibt */
@@ -33,7 +38,8 @@ type DatenKontext = {
   eintragen: (ev: Ereignis, liedId: number) => Promise<boolean>
   entfernen: (ev: Ereignis, liedId: number) => Promise<boolean>
   uebernehmen: (ev: Ereignis, liedIds: number[]) => Promise<number>
-  setzeStatus: (liedId: number, status: string) => Promise<boolean>
+  /** In der App änderbare Angaben eines Liedes: Status, Dirigent, Klavierspieler */
+  aendereLied: (liedId: number, aenderung: LiedAenderung) => Promise<boolean>
   /** Anzahl offener Hinweise eines Liedes nach Änderungen auf der Lied-Seite */
   setzeOffeneHinweise: (liedId: number, anzahl: number) => void
 }
@@ -70,25 +76,29 @@ export function DatenProvider({ children }: { children: ReactNode }) {
   const [stand, setStand] = useState<Stand>({ art: 'laedt' })
   const [liederListe, setLiederListe] = useState<Lied[]>([])
   const [themen, setThemen] = useState<Thema[]>([])
+  const [dirigenten, setDirigenten] = useState<Person[]>([])
+  const [klavierspieler, setKlavierspieler] = useState<Person[]>([])
   const [eintraege, setEintraege] = useState<Eintrag[]>([])
   const [offeneHinweise, setOffeneHinweise] = useState<Map<number, number>>(new Map())
   const zuletztGeladen = useRef(0)
 
   const neuLaden = useCallback(async () => {
     try {
-      const [l, e, h, k] = await Promise.all([
+      const [l, e, h, k, d, kl] = await Promise.all([
         supabase.from('lieder').select('*').order('kuerzel').order('nummer'),
         alleEintraege(),
         supabase.from('hinweise').select('lied_id').eq('geschlossen', false),
         supabase.from('kategorien').select('*').order('reihenfolge'),
+        supabase.from('dirigenten').select('*').order('reihenfolge'),
+        supabase.from('klavierspieler').select('*').order('reihenfolge'),
       ])
-      if (l.error) throw l.error
-      if (h.error) throw h.error
-      if (k.error) throw k.error
+      for (const r of [l, h, k, d, kl]) if (r.error) throw r.error
       const zaehler = new Map<number, number>()
-      for (const x of h.data) zaehler.set(x.lied_id, (zaehler.get(x.lied_id) ?? 0) + 1)
-      setLiederListe(l.data)
-      setThemen(k.data)
+      for (const x of h.data ?? []) zaehler.set(x.lied_id, (zaehler.get(x.lied_id) ?? 0) + 1)
+      setLiederListe(l.data ?? [])
+      setThemen(k.data ?? [])
+      setDirigenten(d.data ?? [])
+      setKlavierspieler(kl.data ?? [])
       setEintraege(e)
       setOffeneHinweise(zaehler)
       setStand({ art: 'bereit' })
@@ -207,15 +217,16 @@ export function DatenProvider({ children }: { children: ReactNode }) {
     [proEreignis, zeige],
   )
 
-  const setzeStatus = useCallback(
-    async (liedId: number, status: string) => {
-      const vorher = liederListe.find((l) => l.id === liedId)?.status
-      const aendern = (st: string) => setLiederListe((alt) => alt.map((l) => (l.id === liedId ? { ...l, status: st } : l)))
-      aendern(status)
-      const { error } = await supabase.from('lieder').update({ status }).eq('id', liedId)
+  const aendereLied = useCallback(
+    async (liedId: number, aenderung: LiedAenderung) => {
+      const vorher = liederListe.find((l) => l.id === liedId)
+      const setze = (teil: LiedAenderung) =>
+        setLiederListe((alt) => alt.map((l) => (l.id === liedId ? { ...l, ...teil } : l)))
+      setze(aenderung)
+      const { error } = await supabase.from('lieder').update(aenderung).eq('id', liedId)
       if (error) {
-        if (vorher) aendern(vorher)
-        zeige('Status nicht gespeichert – keine Verbindung?')
+        if (vorher) setze({ status: vorher.status, dirigent_id: vorher.dirigent_id, klavierspieler_id: vorher.klavierspieler_id })
+        zeige('Nicht gespeichert – keine Verbindung?')
         return false
       }
       return true
@@ -237,6 +248,8 @@ export function DatenProvider({ children }: { children: ReactNode }) {
     lieder,
     liederListe,
     themen,
+    dirigenten,
+    klavierspieler,
     proEreignis,
     ereignisIds,
     offeneHinweise,
@@ -245,7 +258,7 @@ export function DatenProvider({ children }: { children: ReactNode }) {
     eintragen,
     entfernen,
     uebernehmen,
-    setzeStatus,
+    aendereLied,
     setzeOffeneHinweise,
   }
   return <Kontext.Provider value={wert}>{children}</Kontext.Provider>

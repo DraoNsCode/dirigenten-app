@@ -241,3 +241,5 @@ textarea { width: 100%; min-height: 84px; padding: 10px 12px; border: 1px solid 
 .feldname { font-family: var(--font-label); font-weight: 600; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
 .typepick { display: flex; flex-wrap: wrap; gap: 8px; }
 .row .main { cursor: pointer; }
+.selectbox.empty-val { border-style: dashed; border-color: var(--dash); background: transparent; color: var(--muted); }
+.selectbox span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }

@@ -72,7 +72,15 @@ export default function LiedSeite({ id }: { id: number }) {
   const herkunft = lied.im_buch ? `${lied.sprache === 'R' ? 'Russisch' : 'Deutsch'} · Nr. ${lied.nummer}` : `Zettel · ${kennung(lied)}`
 
   async function statusAendern(status: string) {
-    if (await daten.setzeStatus(id, status)) zeige(`Status: ${STATUS_TEXT[status] ?? status}`)
+    if (await daten.aendereLied(id, { status })) zeige(`Status: ${STATUS_TEXT[status] ?? status}`)
+  }
+
+  async function personAendern(feld: 'dirigent_id' | 'klavierspieler_id', wert: string) {
+    const neu = wert === '' ? null : Number(wert)
+    const liste = feld === 'dirigent_id' ? daten.dirigenten : daten.klavierspieler
+    const name = liste.find((p) => p.id === neu)?.name
+    const titel = feld === 'dirigent_id' ? 'Dirigent' : 'Klavier'
+    if (await daten.aendereLied(id, { [feld]: neu })) zeige(name ? `${titel}: ${name}` : `${titel}: nicht zugeordnet`)
   }
 
   return (
@@ -104,6 +112,28 @@ export default function LiedSeite({ id }: { id: number }) {
         <div>
           <dt>Thema</dt>
           <dd>{thema ? thema.name : <span className="later">noch nicht zugeordnet</span>}</dd>
+        </div>
+        <div>
+          <dt>Dirigent</dt>
+          <dd>
+            <PersonAuswahl
+              name="Dirigent"
+              wert={lied.dirigent_id}
+              personen={daten.dirigenten}
+              onWahl={(w) => personAendern('dirigent_id', w)}
+            />
+          </dd>
+        </div>
+        <div>
+          <dt>Klavier</dt>
+          <dd>
+            <PersonAuswahl
+              name="Klavierspieler"
+              wert={lied.klavierspieler_id}
+              personen={daten.klavierspieler}
+              onWahl={(w) => personAendern('klavierspieler_id', w)}
+            />
+          </dd>
         </div>
         <div>
           <dt>Gesungen {jahr}</dt>
@@ -141,6 +171,34 @@ export default function LiedSeite({ id }: { id: number }) {
 
       <Hinweise liedId={id} />
     </>
+  )
+}
+
+function PersonAuswahl({
+  name,
+  wert,
+  personen,
+  onWahl,
+}: {
+  name: string
+  wert: number | null
+  personen: { id: number; name: string }[]
+  onWahl: (w: string) => void
+}) {
+  const aktuell = personen.find((p) => p.id === wert)
+  return (
+    <span className={'selectbox' + (aktuell ? '' : ' empty-val')}>
+      <span>{aktuell ? aktuell.name : 'Zuordnen'}</span>
+      <Runter />
+      <select aria-label={name} value={wert ?? ''} onChange={(e) => onWahl(e.target.value)}>
+        <option value="">nicht zugeordnet</option>
+        {personen.map((p) => (
+          <option key={p.id} value={p.id}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+    </span>
   )
 }
 

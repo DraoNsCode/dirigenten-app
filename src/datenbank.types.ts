@@ -9,6 +9,18 @@ export type Database = {
   }
   public: {
     Tables: {
+      dirigenten: {
+        Row: { id: number; name: string; reihenfolge: number }
+        Insert: { id: number; name: string; reihenfolge: number }
+        Update: { id?: number; name?: string; reihenfolge?: number }
+        Relationships: []
+      }
+      klavierspieler: {
+        Row: { id: number; name: string; reihenfolge: number }
+        Insert: { id: number; name: string; reihenfolge: number }
+        Update: { id?: number; name?: string; reihenfolge?: number }
+        Relationships: []
+      }
       eintraege: {
         Row: {
           datum: string
@@ -107,11 +119,13 @@ export type Database = {
         Row: {
           buchseite_bis: number | null
           buchseite_von: number | null
+          dirigent_id: number | null
           erstellt_am: string
           geaendert_am: string
           id: number
           im_buch: boolean
           kategorie_id: number | null
+          klavierspieler_id: number | null
           kuerzel: string
           noten_pfad: string | null
           nummer: number
@@ -123,11 +137,13 @@ export type Database = {
         Insert: {
           buchseite_bis?: number | null
           buchseite_von?: number | null
+          dirigent_id?: number | null
           erstellt_am?: string
           geaendert_am?: string
           id?: never
           im_buch?: boolean
           kategorie_id?: number | null
+          klavierspieler_id?: number | null
           kuerzel: string
           noten_pfad?: string | null
           nummer: number
@@ -139,11 +155,13 @@ export type Database = {
         Update: {
           buchseite_bis?: number | null
           buchseite_von?: number | null
+          dirigent_id?: number | null
           erstellt_am?: string
           geaendert_am?: string
           id?: never
           im_buch?: boolean
           kategorie_id?: number | null
+          klavierspieler_id?: number | null
           kuerzel?: string
           noten_pfad?: string | null
           nummer?: number
