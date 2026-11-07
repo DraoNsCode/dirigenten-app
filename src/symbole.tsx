@@ -124,3 +124,11 @@ export function Lupe({ size = 18 }: Props) {
     </svg>
   )
 }
+
+export function Runter({ size = 14 }: Props) {
+  return (
+    <svg {...basis(size)} strokeWidth={2}>
+      <path d="M6 9l6 6 6-6" />
+    </svg>
+  )
+}

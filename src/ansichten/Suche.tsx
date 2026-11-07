@@ -23,7 +23,7 @@ export default function Suche({ evId }: { evId: string }) {
     .filter((l): l is Lied => !!l)
     .filter((l) => !q || normal(l.titel).replace(/\s/g, '').includes(q) || normal(l.kuerzel + l.nummer) === q || String(l.nummer) === q)
 
-  const treffer = sucheLieder(daten.liederListe, eingabe)
+  const treffer = sucheLieder(daten.liederListe, eingabe, 40)
 
   return (
     <>

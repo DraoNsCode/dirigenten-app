@@ -5,7 +5,7 @@ import Anmeldung from './Anmeldung'
 import Leiste, { type Reiter } from './Leiste'
 import { DatenProvider } from './daten'
 import { MeldungProvider } from './meldung'
-import { NavKontext, type Ansicht, type Navigation } from './navigation'
+import { LIEDER_ANFANG, NavKontext, type Ansicht, type LiederEinstellung, type Navigation } from './navigation'
 import { heute, wochenAbstand } from './kalender'
 import Woche from './ansichten/Woche'
 import Suche from './ansichten/Suche'
@@ -13,6 +13,7 @@ import Uebernehmen from './ansichten/Uebernehmen'
 import Lieder from './ansichten/Lieder'
 import Menue from './ansichten/Menue'
 import Liste from './ansichten/Liste'
+import LiedSeite from './ansichten/LiedSeite'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
@@ -53,6 +54,7 @@ function Hauptansicht({ email }: { email: string }) {
   const [reiter, setReiter] = useState<Reiter>('woche')
   const [stapel, setStapel] = useState<Ansicht[]>([START.woche])
   const [woche, setWoche] = useState(0)
+  const [lieder, setLieder] = useState<LiederEinstellung>(LIEDER_ANFANG)
 
   const wechsleReiter = useCallback((r: Reiter) => {
     setReiter(r)
@@ -71,8 +73,11 @@ function Hauptansicht({ email }: { email: string }) {
       },
       woche,
       setWoche,
+      vorher: stapel.length > 1 ? stapel[stapel.length - 2] : undefined,
+      lieder,
+      setLieder,
     }),
-    [woche, wechsleReiter],
+    [woche, wechsleReiter, stapel, lieder],
   )
 
   const oben = stapel[stapel.length - 1]
@@ -88,6 +93,7 @@ function Hauptansicht({ email }: { email: string }) {
           {oben.v === 'lieder' && <Lieder />}
           {oben.v === 'menue' && <Menue email={email} />}
           {oben.v === 'liste' && <Liste art={oben.art} />}
+          {oben.v === 'lied' && <LiedSeite key={oben.id} id={oben.id} />}
         </main>
         <Leiste aktiv={reiter} onWechsel={wechsleReiter} />
       </div>

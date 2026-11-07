@@ -9,6 +9,24 @@ export type Ansicht =
   | { v: 'lieder' }
   | { v: 'menue' }
   | { v: 'liste'; art: 'gd' | 'pr' }
+  | { v: 'lied'; id: number }
+
+/** Einstellungen im Reiter Lieder; bleiben erhalten, solange die App offen ist */
+export type LiederEinstellung = {
+  suche: string
+  herkunft: 'alle' | 'D' | 'R' | 'zettel'
+  status: 'alle' | 'erlernt' | 'in_arbeit' | 'unbekannt'
+  thema: 'alle' | number
+  sortierung: 'haeufigkeit' | 'laengst' | 'nummer' | 'titel'
+}
+
+export const LIEDER_ANFANG: LiederEinstellung = {
+  suche: '',
+  herkunft: 'alle',
+  status: 'alle',
+  thema: 'alle',
+  sortierung: 'haeufigkeit',
+}
 
 export type Navigation = {
   geh: (a: Ansicht) => void
@@ -19,6 +37,10 @@ export type Navigation = {
   /** Wochen-Abstand zur aktuellen Woche (0 = diese Woche) */
   woche: number
   setWoche: (w: number) => void
+  /** Ansicht, von der aus die aktuelle geöffnet wurde (für die Beschriftung von „Zurück“) */
+  vorher: Ansicht | undefined
+  lieder: LiederEinstellung
+  setLieder: (e: LiederEinstellung) => void
 }
 
 export const NavKontext = createContext<Navigation | null>(null)

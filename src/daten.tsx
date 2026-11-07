@@ -5,6 +5,7 @@ import { ereignisId, heute, type Ereignis } from './kalender'
 import { useMeldung } from './meldung'
 
 export type Lied = Zeile<'lieder'>
+export type Thema = Zeile<'kategorien'>
 export type Eintrag = Pick<Zeile<'eintraege'>, 'datum' | 'termin' | 'lied_id' | 'erstellt_am'>
 
 type Stand = { art: 'laedt' } | { art: 'bereit' } | { art: 'fehler'; text: string }
@@ -20,6 +21,8 @@ type DatenKontext = {
   stand: Stand
   lieder: Map<number, Lied>
   liederListe: Lied[]
+  /** Themen (in der Datenbank: kategorien), in Anzeigereihenfolge */
+  themen: Thema[]
   /** Lied-IDs je Ereignis-Kennung, in der Reihenfolge des Eintragens */
   proEreignis: Map<string, number[]>
   /** Ereignis-Kennungen, zu denen es Einträge gibt */
@@ -30,6 +33,9 @@ type DatenKontext = {
   eintragen: (ev: Ereignis, liedId: number) => Promise<boolean>
   entfernen: (ev: Ereignis, liedId: number) => Promise<boolean>
   uebernehmen: (ev: Ereignis, liedIds: number[]) => Promise<number>
+  setzeStatus: (liedId: number, status: string) => Promise<boolean>
+  /** Anzahl offener Hinweise eines Liedes nach Änderungen auf der Lied-Seite */
+  setzeOffeneHinweise: (liedId: number, anzahl: number) => void
 }
 
 const Kontext = createContext<DatenKontext | null>(null)
@@ -63,22 +69,26 @@ export function DatenProvider({ children }: { children: ReactNode }) {
   const zeige = useMeldung()
   const [stand, setStand] = useState<Stand>({ art: 'laedt' })
   const [liederListe, setLiederListe] = useState<Lied[]>([])
+  const [themen, setThemen] = useState<Thema[]>([])
   const [eintraege, setEintraege] = useState<Eintrag[]>([])
   const [offeneHinweise, setOffeneHinweise] = useState<Map<number, number>>(new Map())
   const zuletztGeladen = useRef(0)
 
   const neuLaden = useCallback(async () => {
     try {
-      const [l, e, h] = await Promise.all([
+      const [l, e, h, k] = await Promise.all([
         supabase.from('lieder').select('*').order('kuerzel').order('nummer'),
         alleEintraege(),
         supabase.from('hinweise').select('lied_id').eq('geschlossen', false),
+        supabase.from('kategorien').select('*').order('reihenfolge'),
       ])
       if (l.error) throw l.error
       if (h.error) throw h.error
+      if (k.error) throw k.error
       const zaehler = new Map<number, number>()
       for (const x of h.data) zaehler.set(x.lied_id, (zaehler.get(x.lied_id) ?? 0) + 1)
       setLiederListe(l.data)
+      setThemen(k.data)
       setEintraege(e)
       setOffeneHinweise(zaehler)
       setStand({ art: 'bereit' })
@@ -197,10 +207,36 @@ export function DatenProvider({ children }: { children: ReactNode }) {
     [proEreignis, zeige],
   )
 
+  const setzeStatus = useCallback(
+    async (liedId: number, status: string) => {
+      const vorher = liederListe.find((l) => l.id === liedId)?.status
+      const aendern = (st: string) => setLiederListe((alt) => alt.map((l) => (l.id === liedId ? { ...l, status: st } : l)))
+      aendern(status)
+      const { error } = await supabase.from('lieder').update({ status }).eq('id', liedId)
+      if (error) {
+        if (vorher) aendern(vorher)
+        zeige('Status nicht gespeichert – keine Verbindung?')
+        return false
+      }
+      return true
+    },
+    [liederListe, zeige],
+  )
+
+  const setzeOffeneHinweise = useCallback((liedId: number, anzahl: number) => {
+    setOffeneHinweise((alt) => {
+      const neu = new Map(alt)
+      if (anzahl > 0) neu.set(liedId, anzahl)
+      else neu.delete(liedId)
+      return neu
+    })
+  }, [])
+
   const wert: DatenKontext = {
     stand,
     lieder,
     liederListe,
+    themen,
     proEreignis,
     ereignisIds,
     offeneHinweise,
@@ -209,6 +245,8 @@ export function DatenProvider({ children }: { children: ReactNode }) {
     eintragen,
     entfernen,
     uebernehmen,
+    setzeStatus,
+    setzeOffeneHinweise,
   }
   return <Kontext.Provider value={wert}>{children}</Kontext.Provider>
 }
@@ -223,6 +261,12 @@ export const STATUS_TEXT: Record<string, string> = {
   erlernt: 'erlernt',
 }
 
+/** Reihenfolge für Sortierungen: erlernt vor in Arbeit vor unbekannt */
+export const STATUS_RANG: Record<string, number> = { erlernt: 0, in_arbeit: 1, unbekannt: 2 }
+
+/** Nach Kennung sortieren: D vor R vor anderen Kürzeln, dann nach Nummer */
+export const nachKennung = (a: Lied, b: Lied) => a.kuerzel.localeCompare(b.kuerzel) || a.nummer - b.nummer
+
 /** Suchtext vereinheitlichen: Kleinbuchstaben, ohne Akzente/Umlautpunkte, ohne Apostrophe */
 export const normal = (s: string) =>
   s
@@ -232,7 +276,7 @@ export const normal = (s: string) =>
     .replace(/[’'`´]/g, '')
 
 /** Lieder nach Kennung („D 74“, „74“, „r13“, „R“) oder Titel suchen */
-export function sucheLieder(liste: Lied[], eingabe: string, max = 40): Lied[] {
+export function sucheLieder(liste: Lied[], eingabe: string, max = Infinity): Lied[] {
   const q = normal(eingabe.trim())
   if (!q) return []
   const kuerzel = new Set(liste.map((l) => normal(l.kuerzel)))

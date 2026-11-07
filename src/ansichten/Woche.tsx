@@ -83,14 +83,14 @@ function Termin({ ev, probenLieder }: { ev: Ereignis; probenLieder: number[] }) 
         return (
           <div className="row" key={id}>
             <span className="num">{kennung(l)}</span>
-            <div className="main">
+            <button className="main" type="button" onClick={() => nav.geh({ v: 'lied', id })}>
               <span className="title">{l.titel}</span>
               {(daten.offeneHinweise.get(id) ?? 0) > 0 && (
                 <span className="meta">
                   <HinweisMarke n={daten.offeneHinweise.get(id) ?? 0} />
                 </span>
               )}
-            </div>
+            </button>
             <button className="xbtn" type="button" aria-label={`${kennung(l)} entfernen`} onClick={() => entfernen(id)}>
               <Kreuz />
             </button>
