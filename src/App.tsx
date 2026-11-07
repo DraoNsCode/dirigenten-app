@@ -1,16 +1,28 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import Anmeldung from './Anmeldung'
 import Leiste, { type Reiter } from './Leiste'
+import { DatenProvider } from './daten'
+import { MeldungProvider } from './meldung'
+import { NavKontext, type Ansicht, type Navigation } from './navigation'
+import { heute, wochenAbstand } from './kalender'
 import Woche from './ansichten/Woche'
+import Suche from './ansichten/Suche'
+import Uebernehmen from './ansichten/Uebernehmen'
 import Lieder from './ansichten/Lieder'
 import Menue from './ansichten/Menue'
+import Liste from './ansichten/Liste'
+
+const START: Record<Reiter, Ansicht> = {
+  woche: { v: 'woche' },
+  lieder: { v: 'lieder' },
+  menue: { v: 'menue' },
+}
 
 export default function App() {
   // undefined = wird noch geprüft, null = nicht angemeldet
   const [sitzung, setSitzung] = useState<Session | null | undefined>(undefined)
-  const [reiter, setReiter] = useState<Reiter>('woche')
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data }) => setSitzung(data.session))
@@ -29,13 +41,56 @@ export default function App() {
   if (!sitzung) return <Anmeldung />
 
   return (
-    <div className="app">
-      <main className="view" key={reiter}>
-        {reiter === 'woche' && <Woche />}
-        {reiter === 'lieder' && <Lieder />}
-        {reiter === 'menue' && <Menue email={sitzung.user.email ?? ''} />}
-      </main>
-      <Leiste aktiv={reiter} onWechsel={setReiter} />
-    </div>
+    <MeldungProvider>
+      <DatenProvider>
+        <Hauptansicht email={sitzung.user.email ?? ''} />
+      </DatenProvider>
+    </MeldungProvider>
+  )
+}
+
+function Hauptansicht({ email }: { email: string }) {
+  const [reiter, setReiter] = useState<Reiter>('woche')
+  const [stapel, setStapel] = useState<Ansicht[]>([START.woche])
+  const [woche, setWoche] = useState(0)
+
+  const wechsleReiter = useCallback((r: Reiter) => {
+    setReiter(r)
+    setStapel([START[r]])
+  }, [])
+
+  const nav = useMemo<Navigation>(
+    () => ({
+      geh: (a) => setStapel((s) => [...s, a]),
+      zurueck: () => setStapel((s) => (s.length > 1 ? s.slice(0, -1) : s)),
+      reiter: wechsleReiter,
+      zurWoche: (datum) => {
+        setWoche(wochenAbstand(datum, heute()))
+        setReiter('woche')
+        setStapel([START.woche])
+      },
+      woche,
+      setWoche,
+    }),
+    [woche, wechsleReiter],
+  )
+
+  const oben = stapel[stapel.length - 1]
+
+  return (
+    <NavKontext.Provider value={nav}>
+      <div className="app">
+        {/* key: neue Ansicht beginnt oben */}
+        <main className="view" key={`${stapel.length}-${oben.v}`}>
+          {oben.v === 'woche' && <Woche />}
+          {oben.v === 'suche' && <Suche evId={oben.ev} />}
+          {oben.v === 'uebernehmen' && <Uebernehmen evId={oben.ev} />}
+          {oben.v === 'lieder' && <Lieder />}
+          {oben.v === 'menue' && <Menue email={email} />}
+          {oben.v === 'liste' && <Liste art={oben.art} />}
+        </main>
+        <Leiste aktiv={reiter} onWechsel={wechsleReiter} />
+      </div>
+    </NavKontext.Provider>
   )
 }

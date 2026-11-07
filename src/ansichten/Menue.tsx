@@ -1,10 +1,13 @@
 import { useState } from 'react'
+import { Kopf } from '../bausteine'
+import { useNav } from '../navigation'
 import { supabase } from '../supabase'
-import { Abmelden, Kalender, Noten, Plus } from '../symbole'
+import { Abmelden, Kalender, Noten, Plus, Rechts } from '../symbole'
 
 declare const __STAND__: string
 
 export default function Menue({ email }: { email: string }) {
+  const nav = useNav()
   const [laeuft, setLaeuft] = useState(false)
 
   async function abmelden() {
@@ -15,29 +18,27 @@ export default function Menue({ email }: { email: string }) {
 
   return (
     <>
-      <header className="head">
-        <div className="eyebrow">Seltener gebraucht</div>
-        <h1>Menü</h1>
-        <div className="goldline" />
-      </header>
+      <Kopf eyebrow="Seltener gebraucht" titel="Menü" />
 
       <ul className="menu">
         <li>
-          <button className="menubtn" type="button" disabled>
+          <button className="menubtn" type="button" onClick={() => nav.geh({ v: 'liste', art: 'gd' })}>
             <Kalender />
             <span className="main">
               <span className="t">Gottesdienste</span>
-              <span className="d">kommt mit der Woche</span>
+              <span className="d">Liste aller Gottesdienste; antippen führt in die Woche zum Nachtragen oder Korrigieren</span>
             </span>
+            <Rechts size={18} />
           </button>
         </li>
         <li>
-          <button className="menubtn" type="button" disabled>
+          <button className="menubtn" type="button" onClick={() => nav.geh({ v: 'liste', art: 'pr' })}>
             <Noten />
             <span className="main">
               <span className="t">Proben</span>
-              <span className="d">kommt mit der Woche</span>
+              <span className="d">Liste aller Proben; antippen führt in die Woche</span>
             </span>
+            <Rechts size={18} />
           </button>
         </li>
         <li>
