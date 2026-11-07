@@ -1,0 +1,26 @@
+{
+  "name": "dirigenten-app",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@fontsource/barlow": "^5.2.0",
+    "@fontsource/barlow-condensed": "^5.2.0",
+    "@fontsource/cormorant-garamond": "^5.2.0",
+    "@supabase/supabase-js": "~2.118.0",
+    "react": "~19.2.9",
+    "react-dom": "~19.2.9"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "~6.1.2",
+    "typescript": "~6.0.3",
+    "vite": "~8.3.5"
+  }
+}

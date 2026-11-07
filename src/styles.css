@@ -1,0 +1,119 @@
+/* Farben und Schriften aus dem Design-System Baptistengemeinde Hanau (Blau hell / Blau dunkel).
+   Layout: eine Handy-Spalte (max. 480 px), Inhalt scrollt, Leiste unten mit drei Reitern. */
+:root {
+  --bg: #fbfaf6; --surface2: #f3ede0; --card: #fffefa; --line: #e2dacb; --line-soft: #efe9dc;
+  --ink: #1a2236; --body: #3e4658; --muted: #6b7180; --label: #7a5c24;
+  --brand: #14244a; --on-brand: #f7f2e7; --gold: #c9a25a; --link: #14244a;
+  --chip-bg: #fffefa; --dash: #c9bfa9; --danger: #a3301f;
+  --c0-bg: #e6e2d8; --c0-fg: #3e4658; --c1-bg: #f2d45c; --c1-fg: #1a2236; --c2-bg: #eba93a; --c2-fg: #1a2236;
+  --c3-bg: #de7b2f; --c3-fg: #1a2236; --c4-bg: #c4402b; --c4-fg: #ffffff; --c5-bg: #8e1f1f; --c5-fg: #ffffff;
+  --tag-notiz-bg: #e6e2d8; --tag-notiz-fg: #3e4658; --tag-problem-bg: #f3ede0; --tag-problem-fg: #7a5c24;
+  --tag-uebe-bg: #e7ebf3; --tag-uebe-fg: #14244a; --toast-bg: #14244a; --toast-fg: #f7f2e7; --scrim: rgba(20, 36, 74, .45);
+  --font-display: "Cormorant Garamond", Georgia, "Times New Roman", serif;
+  --font-body: Barlow, Arial, sans-serif;
+  --font-label: "Barlow Condensed", "Arial Narrow", Arial, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #14244a; --surface2: #1d3160; --card: #223053; --line: #c9a25a59; --line-soft: #c9a25a2e;
+    --ink: #f7f2e7; --body: #c3cadb; --muted: #9aa3b8; --label: #c9a25a;
+    --brand: #e7cea4; --on-brand: #14244a; --gold: #c9a25a; --link: #e7cea4; --chip-bg: #223053; --dash: #9aa3b8;
+    --danger: #f0a493; --c0-bg: #2e3d66; --c0-fg: #c3cadb;
+    --tag-notiz-bg: #2e3d66; --tag-notiz-fg: #c3cadb; --tag-problem-bg: #c9a25a2e; --tag-problem-fg: #e7cea4;
+    --tag-uebe-bg: #2e3d66; --tag-uebe-fg: #e7cea4; --toast-bg: #e7cea4; --toast-fg: #14244a; --scrim: rgba(5, 10, 25, .6);
+    color-scheme: dark;
+  }
+}
+
+html, body, #root { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--body);
+  font-family: var(--font-body); font-size: 16px; line-height: 1.4;
+  -webkit-tap-highlight-color: transparent; -webkit-text-size-adjust: 100%;
+}
+*, *::before, *::after { box-sizing: border-box; }
+button, input, select, textarea { font: inherit; color: inherit; }
+:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.app {
+  max-width: 480px; margin: 0 auto; height: 100%; height: 100dvh;
+  display: flex; flex-direction: column; position: relative; background: var(--bg);
+}
+@media (min-width: 520px) { .app { border-left: 1px solid var(--line); border-right: 1px solid var(--line); } }
+
+.view {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain;
+  padding-top: max(16px, env(safe-area-inset-top, 0px)); padding-bottom: 28px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  display: flex; flex-direction: column; gap: 14px;
+}
+
+/* Leiste unten: Abstand zum unteren Rand und zu den abgerundeten Ecken,
+   damit keine System-Gesten (Siri, Home-Leiste) ausgelöst werden. */
+.tabs {
+  flex-shrink: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--line); background: var(--card);
+  padding-top: 2px; padding-bottom: max(18px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px));
+}
+.tab {
+  position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+  height: 56px; border: 0; background: transparent; color: var(--muted); cursor: pointer;
+}
+.tab[aria-current="page"] { color: var(--brand); }
+.tab[aria-current="page"]::before { content: ""; position: absolute; top: 0; width: 28px; height: 2px; background: var(--gold); }
+.tab span { font-family: var(--font-label); font-weight: 600; font-size: 12px; letter-spacing: .08em; text-transform: uppercase; }
+
+.eyebrow { font-family: var(--font-label); font-weight: 600; font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--label); }
+h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 34px; line-height: 1.05; color: var(--ink); text-wrap: balance; }
+.goldline { width: 40px; height: 2px; background: var(--gold); margin-top: 4px; }
+.head { display: flex; flex-direction: column; gap: 4px; }
+
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
+.card h2 { margin: 0; font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--label); }
+.card p { margin: 0; }
+.note { margin: 0; font-size: 14px; color: var(--muted); }
+.status-ok { color: var(--ink); }
+.status-fehler { color: var(--danger); }
+
+.textbtn {
+  display: inline-flex; align-items: center; gap: 8px; height: 44px; border: 0; background: transparent;
+  color: var(--link); font-weight: 600; font-size: 15px; padding: 0; cursor: pointer; align-self: flex-start;
+}
+.textbtn:disabled { color: var(--muted); cursor: default; }
+
+.primary {
+  display: flex; align-items: center; justify-content: center; gap: 10px; width: 100%; height: 52px; padding: 0 16px;
+  border: 0; border-radius: 8px; background: var(--brand); color: var(--on-brand); font-weight: 600; font-size: 16px; cursor: pointer;
+}
+.primary:disabled { opacity: .6; cursor: default; }
+
+.menu { list-style: none; margin: 0; padding: 0; background: var(--card); border: 1px solid var(--line); border-radius: 8px; }
+.menu li + li { border-top: 1px solid var(--line-soft); }
+.menubtn {
+  width: 100%; display: flex; align-items: center; gap: 14px; min-height: 68px; padding: 10px 14px;
+  border: 0; background: transparent; text-align: left; cursor: pointer; color: var(--link);
+}
+.menubtn:disabled { cursor: default; color: var(--muted); }
+.menubtn .main { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.menubtn .t { font-weight: 600; font-size: 16px; color: var(--ink); }
+.menubtn:disabled .t { color: var(--muted); }
+.menubtn .d { font-size: 14px; color: var(--muted); }
+
+/* Anmeldung */
+.login {
+  min-height: 100%; min-height: 100dvh; max-width: 420px; margin: 0 auto;
+  display: flex; flex-direction: column; justify-content: center; gap: 24px;
+  padding: max(24px, env(safe-area-inset-top, 0px)) max(20px, env(safe-area-inset-right, 0px)) max(24px, env(safe-area-inset-bottom, 0px)) max(20px, env(safe-area-inset-left, 0px));
+}
+.login form { display: flex; flex-direction: column; gap: 16px; }
+.field { display: flex; flex-direction: column; gap: 6px; }
+.field label { font-family: var(--font-label); font-weight: 600; font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+.field input {
+  height: 48px; padding: 0 12px; border: 1px solid var(--line); border-radius: 8px; background: var(--card);
+  color: var(--ink); font-size: 16px; outline: none;
+}
+.field input:focus { border-color: var(--brand); }
+.fehler { margin: 0; padding: 10px 12px; border-radius: 8px; background: var(--surface2); color: var(--danger); font-size: 15px; }
+.laden { flex: 1; display: flex; align-items: center; justify-content: center; color: var(--muted); }
