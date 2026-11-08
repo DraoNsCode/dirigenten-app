@@ -50,17 +50,22 @@ export type Navigation = {
 /**
  * Anzeigemodi (Daniel, 8.11.2026: Stufe 1 und 2; Handy quer ordentlich umsetzen statt sperren)
  * - schmal: Handy hochkant, unter 600 px – Leiste unten, eine Ansicht
- * - mittel: 600 bis 899 px (Tablet hochkant, Handy quer) oder Handy quer mit wenig Höhe – Seitenleiste, eine Ansicht
- * - breit: ab 900 px (Tablet quer, Laptop, PC, große Handys quer) – Seitenleiste, links Liste, rechts Detail
+ * - mittel: 600 bis 899 px (Tablet hochkant) und jedes Handy quer – Seitenleiste, eine Ansicht
+ * - breit: ab 900 px Breite und mindestens 500 px Höhe (Tablet quer, Laptop, PC) – Seitenleiste, links Liste, rechts Detail
+ * Handys quer bekommen nie zwei Bereiche, auch große iPhones mit über 900 px Breite nicht (Daniel, 8.11.2026).
  */
 export type Layout = 'schmal' | 'mittel' | 'breit'
+
+/** Unter dieser Höhe gilt ein Querformat als Handy */
+const HANDY_HOEHE = 500
 
 const bestimmeLayout = (): Layout => {
   const w = window.innerWidth
   const h = window.innerHeight
-  if (w >= 900) return 'breit'
-  // Handy quer: wenig Höhe – Seitenleiste statt Leiste unten, auch bei kleiner Breite
-  if (w >= 600 || (w > h && h < 500)) return 'mittel'
+  const handyQuer = w > h && h < HANDY_HOEHE
+  if (w >= 900 && !handyQuer) return 'breit'
+  // Handy quer: wenig Höhe – Seitenleiste statt Leiste unten, eine Ansicht
+  if (w >= 600 || handyQuer) return 'mittel'
   return 'schmal'
 }
 
