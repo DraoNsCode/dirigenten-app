@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { useDaten } from './daten'
 import { ausIso, heute, kurzDatum } from './kalender'
-import { useNav } from './navigation'
-import { Info, Links } from './symbole'
+import { useBereich, useNav } from './navigation'
+import { Info, Kreuz, Links } from './symbole'
 
 export function Kopf({ eyebrow, titel, klein, rechts }: { eyebrow: string; titel: string; klein?: boolean; rechts?: ReactNode }) {
   const h1 = <h1 className={klein ? 'small' : undefined}>{titel}</h1>
@@ -24,6 +24,15 @@ export function Kopf({ eyebrow, titel, klein, rechts }: { eyebrow: string; titel
 
 export function Zurueck({ text }: { text: string }) {
   const nav = useNav()
+  const bereich = useBereich()
+  if (bereich === 'detail') {
+    return (
+      <button className="back schliessen" type="button" onClick={nav.zurueck}>
+        <Kreuz size={18} />
+        Schließen
+      </button>
+    )
+  }
   return (
     <button className="back" type="button" onClick={nav.zurueck}>
       <Links size={20} />

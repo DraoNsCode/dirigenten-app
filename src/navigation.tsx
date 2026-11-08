@@ -1,4 +1,4 @@
-import { createContext, useContext } from 'react'
+import { createContext, useContext, useEffect, useState } from 'react'
 import type { Reiter } from './Leiste'
 
 // Ansichten innerhalb eines Reiters liegen als Stapel übereinander (zurück = oberste entfernen).
@@ -41,7 +41,47 @@ export type Navigation = {
   vorher: Ansicht | undefined
   lieder: LiederEinstellung
   setLieder: (e: LiederEinstellung) => void
+  /** Anzeigemodus nach Bildschirmbreite */
+  layout: Layout
+  /** Im breiten Modus die Ansicht im rechten Bereich (sonst die oberste Ansicht, falls nicht die Wurzel) */
+  detail: Ansicht | undefined
 }
+
+/**
+ * Anzeigemodi (Daniel, 8.11.2026: Stufe 1 und 2; Handy quer ordentlich umsetzen statt sperren)
+ * - schmal: Handy hochkant, unter 600 px – Leiste unten, eine Ansicht
+ * - mittel: 600 bis 899 px (Tablet hochkant, Handy quer) oder Handy quer mit wenig Höhe – Seitenleiste, eine Ansicht
+ * - breit: ab 900 px (Tablet quer, Laptop, PC, große Handys quer) – Seitenleiste, links Liste, rechts Detail
+ */
+export type Layout = 'schmal' | 'mittel' | 'breit'
+
+const bestimmeLayout = (): Layout => {
+  const w = window.innerWidth
+  const h = window.innerHeight
+  if (w >= 900) return 'breit'
+  // Handy quer: wenig Höhe – Seitenleiste statt Leiste unten, auch bei kleiner Breite
+  if (w >= 600 || (w > h && h < 500)) return 'mittel'
+  return 'schmal'
+}
+
+export function useLayout(): Layout {
+  const [layout, setLayout] = useState(bestimmeLayout)
+  useEffect(() => {
+    const pruefen = () => setLayout(bestimmeLayout())
+    window.addEventListener('resize', pruefen)
+    window.addEventListener('orientationchange', pruefen)
+    return () => {
+      window.removeEventListener('resize', pruefen)
+      window.removeEventListener('orientationchange', pruefen)
+    }
+  }, [])
+  return layout
+}
+
+/** In welchem Bereich eine Ansicht steht: einzeln (schmal/mittel), links (Liste) oder rechts (Detail) */
+export type Bereich = 'einzeln' | 'liste' | 'detail'
+export const BereichKontext = createContext<Bereich>('einzeln')
+export const useBereich = () => useContext(BereichKontext)
 
 export const NavKontext = createContext<Navigation | null>(null)
 

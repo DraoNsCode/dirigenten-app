@@ -75,9 +75,11 @@ export default function Lieder() {
   }, [daten.stand.art])
 
   function oeffne(l: Lied) {
-    gemerkteScrollposition = wurzel.current?.closest('.view')?.scrollTop ?? null
+    // Im breiten Modus bleibt die Liste links stehen; nur sonst die Position merken
+    if (nav.layout !== 'breit') gemerkteScrollposition = wurzel.current?.closest('.view')?.scrollTop ?? null
     nav.geh({ v: 'lied', id: l.id })
   }
+  const gewaehlt = nav.detail?.v === 'lied' ? nav.detail.id : undefined
 
   const gesamt = daten.liederListe.length
   const zaehler = suche
@@ -156,7 +158,7 @@ export default function Lieder() {
         <>
           <ul className="list" aria-label="Liedliste">
             {liste.map((l) => (
-              <LiedZeile key={l.id} lied={l} onOeffne={oeffne} />
+              <LiedZeile key={l.id} lied={l} onOeffne={oeffne} gewaehlt={l.id === gewaehlt} />
             ))}
             {liste.length === 0 && (
               <li>
@@ -175,7 +177,7 @@ export default function Lieder() {
               <h3>Weitere Treffer</h3>
               <ul className="list">
                 {weitere.map((l) => (
-                  <LiedZeile key={l.id} lied={l} onOeffne={oeffne} />
+                  <LiedZeile key={l.id} lied={l} onOeffne={oeffne} gewaehlt={l.id === gewaehlt} />
                 ))}
               </ul>
             </section>
@@ -214,14 +216,14 @@ function Auswahl({
   )
 }
 
-function LiedZeile({ lied, onOeffne }: { lied: Lied; onOeffne: (l: Lied) => void }) {
+function LiedZeile({ lied, onOeffne, gewaehlt }: { lied: Lied; onOeffne: (l: Lied) => void; gewaehlt?: boolean }) {
   const daten = useDaten()
   const hinweise = daten.offeneHinweise.get(lied.id) ?? 0
   const jeGesungen = daten.statistik.zuletzt.has(lied.id)
   const unbekannt = lied.status === 'unbekannt'
   return (
     <li className={unbekannt ? 'dim' : undefined}>
-      <button className="listbtn" type="button" onClick={() => onOeffne(lied)}>
+      <button className="listbtn" type="button" aria-current={gewaehlt ? 'true' : undefined} onClick={() => onOeffne(lied)}>
         <span className="num">{kennung(lied)}</span>
         <span className="main">
           <span className="title">{lied.titel}</span>

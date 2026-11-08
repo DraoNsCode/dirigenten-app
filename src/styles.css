@@ -244,10 +244,54 @@ textarea { width: 100%; min-height: 84px; padding: 10px 12px; border: 1px solid 
 .selectbox.empty-val { border-style: dashed; border-color: var(--dash); background: transparent; color: var(--muted); }
 .selectbox span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
-/* Querformat-Hinweis auf dem Handy */
-.hochkant {
-  position: fixed; inset: 0; z-index: 100; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px;
-  background: var(--bg); color: var(--ink); text-align: center; padding: 24px;
+
+/* ---------- Anzeigemodi: schmal (Handy hochkant), mittel, breit ---------- */
+/* Inhalt einer Ansicht; im schmalen Modus volle Breite wie bisher */
+.inhalt { display: flex; flex-direction: column; gap: 14px; width: 100%; margin: 0 auto; min-height: 100%; }
+.inhalt > * { flex-shrink: 0; }
+
+.app.mittel, .app.breit { max-width: none; flex-direction: row; border: 0; }
+.app.mittel .view { flex: 1; min-width: 0; }
+.app.mittel .inhalt { max-width: 640px; }
+
+/* Breit: links die Liste (Woche, Lieder, Menü), rechts das Detail */
+.app.breit .liste-bereich { flex: 0 0 clamp(360px, 36vw, 540px); min-width: 0; border-right: 1px solid var(--line); }
+.app.breit .detail-bereich { flex: 1; min-width: 0; }
+.app.breit .detail-bereich .inhalt { max-width: 760px; }
+.leer-bereich { flex: 1; display: flex; align-items: center; justify-content: center; padding: 24px; text-align: center; color: var(--muted); }
+.leer-bereich p { margin: 0; max-width: 320px; font-size: 15px; line-height: 1.5; }
+.back.schliessen { gap: 6px; }
+
+/* Seitenleiste statt Leiste unten (mittel und breit) */
+.tabs.seite {
+  display: flex; flex-direction: column; justify-content: flex-start; gap: 4px; flex-shrink: 0;
+  width: calc(88px + env(safe-area-inset-left, 0px)); overflow-y: auto;
+  border-top: 0; border-right: 1px solid var(--line);
+  padding: max(12px, env(safe-area-inset-top, 0px)) 6px max(12px, env(safe-area-inset-bottom, 0px)) max(6px, env(safe-area-inset-left, 0px));
 }
-.hochkant svg { color: var(--label); }
-.hochkant p { margin: 0; font-size: 17px; font-weight: 500; }
+.tabs.seite .tab { width: 100%; height: 66px; border-radius: 8px; padding: 0 2px; }
+.tabs.seite .tab[aria-current="page"]::before { top: 17px; left: 0; width: 2px; height: 32px; }
+.tabs.seite .tab span { font-size: 11px; line-height: 1.15; text-align: center; }
+
+/* Auswahl im breiten Modus sichtbar machen */
+.listbtn { padding-left: 8px; padding-right: 8px; margin: 0 -8px; width: calc(100% + 16px); border-radius: 6px; }
+.listbtn[aria-current="true"] { background: var(--surface2); box-shadow: inset 3px 0 0 var(--gold); }
+.card.ereignis.aktiv { border-color: var(--brand); box-shadow: inset 3px 0 0 var(--gold); }
+.row.gewaehlt .title { color: var(--brand); font-weight: 600; }
+
+/* Maus: Rückmeldung beim Überfahren */
+@media (hover: hover) and (pointer: fine) {
+  .listbtn:hover, .menubtn:hover:not(:disabled) { background: var(--surface2); }
+  .menubtn { border-radius: 8px; }
+  .row .main:hover .title { color: var(--brand); }
+  .tab:hover { color: var(--brand); }
+  .textbtn:hover:not(:disabled), .back:hover { text-decoration: underline; text-underline-offset: 3px; }
+  .addbtn:not(.done):hover { background: var(--brand); color: var(--on-brand); }
+  .xbtn:hover { color: var(--danger); }
+  .chip:hover, .pill-btn:hover, .selectbox:hover { border-color: var(--brand); }
+}
+
+/* Ohne Leiste unten sitzt die Rückmeldung tiefer */
+@media (min-width: 600px), (orientation: landscape) and (max-height: 500px) {
+  .toast { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }
+}

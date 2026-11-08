@@ -62,6 +62,9 @@ function Termin({ ev, probenLieder }: { ev: Ereignis; probenLieder: number[] }) 
   const zeige = useMeldung()
   const liste = daten.proEreignis.get(ev.id) ?? []
   const istProbe = ev.art === 'pr'
+  // Breiter Modus: der Termin, dessen „Lied eintragen“ rechts offen ist, wird hervorgehoben
+  const aktiv = nav.detail && 'ev' in nav.detail && nav.detail.ev === ev.id
+  const offenesLied = nav.detail?.v === 'lied' ? nav.detail.id : undefined
 
   async function entfernen(liedId: number) {
     const l = daten.lieder.get(liedId)
@@ -69,7 +72,7 @@ function Termin({ ev, probenLieder }: { ev: Ereignis; probenLieder: number[] }) 
   }
 
   return (
-    <section className="card ereignis" aria-label={ereignisTitel(ev)}>
+    <section className={'card ereignis' + (aktiv ? ' aktiv' : '')} aria-label={ereignisTitel(ev)}>
       <div className="cardhead">
         <h2>{ereignisTitel(ev)}</h2>
         {liste.length > 0 && <span className="count">{liste.length === 1 ? '1 Lied' : `${liste.length} Lieder`}</span>}
@@ -81,7 +84,7 @@ function Termin({ ev, probenLieder }: { ev: Ereignis; probenLieder: number[] }) 
         const l = daten.lieder.get(id)
         if (!l) return null
         return (
-          <div className="row" key={id}>
+          <div className={'row' + (id === offenesLied ? ' gewaehlt' : '')} key={id}>
             <span className="num">{kennung(l)}</span>
             <button className="main" type="button" onClick={() => nav.geh({ v: 'lied', id })}>
               <span className="title">{l.titel}</span>
