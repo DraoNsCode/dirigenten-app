@@ -392,7 +392,12 @@ dl.facts > div.breit { grid-column: 1 / -1; }
 .noten .abcjs-annotation { font-style: italic; fill: var(--muted); }
 .noten .abcjs-note.is-on, .noten .abcjs-note.is-on path { fill: var(--gold); }
 .noten-hinweis { margin: 0; font-size: 14px; color: var(--body); }
-.noten-tempo { margin: 0; font-size: 13px; color: var(--muted); }
+.abspielen { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }
+.abspielen .noten-tempo { margin-left: auto; }
+.noten-tempo { font-size: 13px; color: var(--muted); white-space: nowrap; }
+.ghost.voll { background: var(--brand); color: var(--on-brand); }
+.ghost.metro { border-color: var(--line); }
+.ghost.metro[aria-pressed="true"] { border-color: var(--brand); background: var(--surface2); }
 
 /* Grafiken: Farben der Sammlung auf die der App abbilden */
 .grafik {
@@ -401,6 +406,11 @@ dl.facts > div.breit { grid-column: 1 / -1; }
 }
 .grafik svg { display: block; width: 100%; max-width: 480px; height: auto; margin: 0 auto; color: var(--ink); font-family: var(--font-body); }
 .grafik figcaption { font-size: 14px; color: var(--muted); line-height: 1.4; }
+.grafik-hinweis { margin: 0; text-align: center; font-size: 14px; font-weight: 600; color: var(--link); }
+.grafik [data-ton] { cursor: pointer; outline: none; }
+.grafik [data-ton]:focus-visible circle { stroke: var(--gold); stroke-width: 4px; }
+.grafik [data-ton].ton-an circle { stroke: var(--gold); stroke-width: 5px; }
+@media (hover: hover) and (pointer: fine) { .grafik [data-ton]:hover circle { stroke: var(--gold); stroke-width: 4px; } }
 
 /* Ohne Leiste unten sitzt die Rückmeldung tiefer */
 @media (min-width: 600px), (orientation: landscape) and (max-height: 500px) {

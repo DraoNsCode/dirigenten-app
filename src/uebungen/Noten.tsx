@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { TuneObject } from 'abcjs'
-import { MAX_SCHRITT, MIN_SCHRITT, istRhythmus, schlag, schritteText, sequenzSchritte, stimmen, tonartName } from './abc'
+import { MAX_SCHRITT, MIN_SCHRITT, istRhythmus, schlag, schritteText, sequenzSchritte, stimmen, taktwechsel, tonartName } from './abc'
+import { metronom, metronomTakte, spielen, stoppen, stoppenWenn, type Ereignis, type Marke } from './klang'
 import type { Notenblock } from './typen'
 
-// Ein Notenblock: Noten zeichnen (abcjs), transponieren, Ansicht für Männerstimmen.
+// Ein Notenblock: Noten zeichnen (abcjs), transponieren, Ansicht für Männerstimmen,
+// anhören mit Notenmarkierung, Ausgangston, Sequenz und Metronom.
 // Die Darstellung folgt der Vorschau der Übungssammlung.
 
 type Abcjs = typeof import('abcjs')
@@ -95,15 +97,62 @@ function useBreite(ref: RefObject<HTMLElement | null>): number {
   return breite
 }
 
+type Abspiel = { tune: TuneObject; abcjs: Abcjs }
+type Ton = { ton: number; start: number; startW: number; dauer: number; staerke: number }
+
+/** Töne eines gezeichneten Stücks; `ganzeSek` = Dauer einer ganzen Note in Sekunden */
+function toene(tune: TuneObject, ganzeSek: number): Ton[] {
+  const r: Ton[] = []
+  for (const spur of tune.setUpAudio({}).tracks) {
+    for (const e of spur as { cmd: string; pitch: number; start: number; duration: number; volume?: number }[]) {
+      if (e.cmd === 'note') r.push({ ton: e.pitch, start: e.start * ganzeSek, startW: e.start, dauer: e.duration * ganzeSek, staerke: e.volume || 90 })
+    }
+  }
+  return r.sort((a, b) => a.start - b.start)
+}
+
+/** Beginn jedes Takts in Sekunden (qpm = Schläge pro Minute) */
+function taktAnfaenge({ tune, abcjs }: Abspiel, tempo: number): number[] {
+  const s: number[] = []
+  try {
+    for (const ev of new abcjs.TimingCallbacks(tune, { qpm: tempo }).noteTimings) {
+      if (ev.type !== 'event' || !ev.measureStart) continue
+      const t = ev.milliseconds / 1000
+      if (!s.length || t > s[s.length - 1] + 1e-6) s.push(t)
+    }
+  } catch {
+    return []
+  }
+  return s
+}
+
+/** Zeitpunkte, zu denen Noten markiert werden */
+function notenMarken({ tune, abcjs }: Abspiel, tempo: number): (Marke & { els: Element[] })[] {
+  try {
+    return new abcjs.TimingCallbacks(tune, { qpm: tempo }).noteTimings
+      .filter((ev) => ev.type === 'event' && ev.elements)
+      .map((ev) => ({ ms: ev.milliseconds, els: (ev.elements ?? []).flat() }))
+  } catch {
+    return []
+  }
+}
+
 export default function Noten({ block, ueberschrift }: { block: Notenblock; ueberschrift?: string }) {
   const art = blockArt(block)
   const [schritte, setSchritte] = useState(0)
   const [stimme, setStimme] = useState<Stimme>('frauen')
   const [fehler, setFehler] = useState(false)
+  const [metro, setMetro] = useState(false)
+  const [laeuft, setLaeuft] = useState<null | 'anhoeren' | 'sequenz'>(null)
+  const [durchgang, setDurchgang] = useState<{ k: number; i: number } | null>(null)
   const ziel = useRef<HTMLDivElement>(null)
-  const tune = useRef<TuneObject | null>(null)
+  const abspiel = useRef<Abspiel | null>(null)
+  const spielId = useRef<number | null>(null)
   const breite = useBreite(ziel)
   const takt = schlag(block.abc)
+  const tempo = block.tempo || 72
+  const ganzeSek = 60 / (tempo * takt.laenge)
+  const wechsel = taktwechsel(block.abc)
   const sequenz = block.sequenz ? sequenzSchritte(block.sequenz) : []
 
   useEffect(() => {
@@ -112,11 +161,13 @@ export default function Noten({ block, ueberschrift }: { block: Notenblock; uebe
     ladeAbcjs()
       .then((abcjs) => {
         if (!aktiv || !ziel.current) return
+        stoppenWenn(spielId.current)
         try {
-          tune.current = zeichnen(abcjs, ziel.current, abcFuerAnsicht(abcjs, block, schritte, stimme), breite)
+          const tune = zeichnen(abcjs, ziel.current, abcFuerAnsicht(abcjs, block, schritte, stimme), breite)
+          abspiel.current = { tune, abcjs }
           setFehler(false)
         } catch {
-          tune.current = null
+          abspiel.current = null
           setFehler(true)
         }
       })
@@ -125,6 +176,130 @@ export default function Noten({ block, ueberschrift }: { block: Notenblock; uebe
       aktiv = false
     }
   }, [block, schritte, stimme, breite])
+
+  // Beim Verlassen der Seite verstummen
+  useEffect(() => () => stoppenWenn(spielId.current), [])
+
+  function markierungWeg() {
+    ziel.current?.querySelectorAll('.is-on').forEach((n) => n.classList.remove('is-on'))
+  }
+
+  function ausgangston() {
+    const a = abspiel.current
+    if (!a) return
+    const t = toene(a.tune, ganzeSek)
+    if (!t.length) return
+    setLaeuft(null)
+    spielId.current = spielen([{ ton: t[0].ton, start: 0, dauer: 1.6 }])
+  }
+
+  /** Was erklingt: Töne, oder bei Rhythmen Schläge (betont auf Taktanfang und Zählzeiten) */
+  function ereignisse(a: Abspiel): Ereignis[] {
+    const t = toene(a.tune, ganzeSek)
+    if (!art.rhythmus) return t
+    const taktW = takt.laenge * takt.proTakt
+    const schlagSek = 60 / tempo
+    const anfaenge = wechsel ? taktAnfaenge(a, tempo) : []
+    return t.map((e): Ereignis => {
+      let imTakt: number
+      let aufSchlag: boolean
+      if (anfaenge.length) {
+        let s0 = 0
+        for (const s of anfaenge) if (s <= e.start + 0.01) s0 = s
+        imTakt = e.start - s0
+        aufSchlag = Math.abs(imTakt / schlagSek - Math.round(imTakt / schlagSek)) < 0.02
+      } else {
+        imTakt = e.startW % taktW
+        aufSchlag = Math.abs(imTakt / takt.laenge - Math.round(imTakt / takt.laenge)) < 1e-6
+      }
+      return { schlag: art.art === 'klatschen' ? 'klatschen' : 'sprechen', staerke: imTakt < 0.01 ? 1 : aufSchlag ? 0.7 : 0.4, start: e.start, dauer: 0.1 }
+    })
+  }
+
+  function anhoeren() {
+    if (laeuft === 'anhoeren') return stoppen()
+    const a = abspiel.current
+    if (!a) return
+    let marken = notenMarken(a, tempo)
+    let ev = ereignisse(a)
+    if (metro) {
+      // Ein Takt Vorzählen; ein Auftakt fällt in die letzten Schläge des Vorzähltakts
+      const schlagSek = 60 / tempo
+      const taktSek = schlagSek * takt.proTakt
+      let auftakt = 0
+      try {
+        auftakt = (a.tune.getPickupLength?.() ?? 0) * ganzeSek
+      } catch {
+        auftakt = 0
+      }
+      const versatz = taktSek - auftakt
+      const ende = ev.reduce((m, e) => Math.max(m, e.start + (e.dauer ?? 0.1)), 0)
+      ev = ev.map((e) => ({ ...e, start: e.start + versatz }))
+      const bis = versatz + Math.ceil((ende - 1e-6) / schlagSek) * schlagSek
+      const anfaenge = wechsel ? taktAnfaenge(a, tempo) : []
+      ev = anfaenge.length
+        ? [...ev, ...metronom(0, versatz, schlagSek, takt.proTakt), ...metronomTakte(anfaenge.map((s) => s + versatz), bis, schlagSek)]
+        : [...ev, ...metronom(0, bis, schlagSek, takt.proTakt)]
+      marken = marken.map((m) => ({ ...m, ms: m.ms + versatz * 1000 }))
+    }
+    const id = spielen(ev, {
+      marken,
+      beiMarke: (m) => {
+        markierungWeg()
+        m.els.forEach((n) => n.classList.add('is-on'))
+      },
+      beimEnde: () => {
+        markierungWeg()
+        setLaeuft(null)
+      },
+    })
+    spielId.current = id
+    if (id !== null) setLaeuft('anhoeren')
+  }
+
+  // Sequenz: vor jedem Durchgang der neue Ausgangston (ein Schlag), dann ein Schlag zum Atmen.
+  // Mit Metronom bekommt jeder Durchgang ganze Takte, damit die Schläge durchlaufen.
+  function sequenzAnhoeren() {
+    if (laeuft === 'sequenz') return stoppen()
+    const a = abspiel.current
+    if (!a) return
+    const basis = toene(a.tune, ganzeSek)
+    if (!basis.length) return
+    const schlagSek = 60 / tempo
+    const taktSek = schlagSek * takt.proTakt
+    const laenge = basis.reduce((m, e) => Math.max(m, e.start + e.dauer), 0)
+    const luecke = metro ? taktSek : 2 * schlagSek
+    const durchlauf = metro ? Math.ceil((laenge - 1e-6) / taktSek) * taktSek : laenge + 0.15
+    const anfaenge = metro && wechsel ? taktAnfaenge(a, tempo) : []
+    let alle: Ereignis[] = []
+    let klicks: Ereignis[] = []
+    const marken: (Marke & { k: number; i: number })[] = []
+    let t = 0
+    sequenz.forEach((k, i) => {
+      const d = k - schritte
+      marken.push({ ms: t * 1000, k, i })
+      alle.push({ ton: basis[0].ton + d, start: t, dauer: schlagSek * 0.9, staerke: 80 })
+      if (anfaenge.length) klicks = klicks.concat(metronom(t, t + luecke, schlagSek, takt.proTakt))
+      t += luecke
+      for (const e of basis) alle.push({ ton: e.ton + d, start: t + e.start, dauer: e.dauer, staerke: e.staerke })
+      if (anfaenge.length) {
+        const t1 = t
+        klicks = klicks.concat(metronomTakte(anfaenge.map((s) => s + t1), t + durchlauf, schlagSek))
+      }
+      t += durchlauf
+    })
+    if (metro) alle = alle.concat(anfaenge.length ? klicks : metronom(0, t, schlagSek, takt.proTakt))
+    const id = spielen(alle, {
+      marken,
+      beiMarke: (m) => setDurchgang({ k: m.k, i: m.i }),
+      beimEnde: () => {
+        setDurchgang(null)
+        setLaeuft(null)
+      },
+    })
+    spielId.current = id
+    if (id !== null) setLaeuft('sequenz')
+  }
 
   return (
     <div className="notenblock">
@@ -158,8 +333,8 @@ export default function Noten({ block, ueberschrift }: { block: Notenblock; uebe
               −
             </button>
             <span className="tonart" aria-live="polite">
-              <strong>{tonartName(block.abc, schritte) || 'Tonart'}</strong>
-              <span>{schritteText(schritte)}</span>
+              <strong>{tonartName(block.abc, durchgang ? durchgang.k : schritte) || 'Tonart'}</strong>
+              <span>{durchgang ? `Durchgang ${durchgang.i + 1} von ${sequenz.length}` : schritteText(schritte)}</span>
             </span>
             <button
               type="button"
@@ -185,9 +360,34 @@ export default function Noten({ block, ueberschrift }: { block: Notenblock; uebe
           {block.sequenz.zurueck ? ' und zurück' : ''} · {sequenz.length} Durchgänge
         </p>
       )}
-      <p className="noten-tempo">
-        {takt.zeichen} = {block.tempo}
-      </p>
+
+      <div className="abspielen">
+        {!art.rhythmus && !art.hoeren && (
+          <button type="button" className="ghost" onClick={ausgangston} disabled={fehler}>
+            Ausgangston
+          </button>
+        )}
+        <button type="button" className="ghost voll" onClick={anhoeren} disabled={fehler}>
+          {laeuft === 'anhoeren' ? 'Stopp' : 'Anhören'}
+        </button>
+        {sequenz.length > 0 && !art.rhythmus && (
+          <button type="button" className="ghost" onClick={sequenzAnhoeren} disabled={fehler}>
+            {laeuft === 'sequenz' ? 'Stopp' : 'Sequenz anhören'}
+          </button>
+        )}
+        <button
+          type="button"
+          className="ghost plain metro"
+          aria-pressed={metro}
+          title="Einen Takt vorzählen und die Schläge mitklicken"
+          onClick={() => setMetro((m) => !m)}
+        >
+          Metronom
+        </button>
+        <span className="noten-tempo">
+          {takt.zeichen} = {tempo}
+        </span>
+      </div>
     </div>
   )
 }

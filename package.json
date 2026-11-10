@@ -13,7 +13,7 @@
     "@fontsource/barlow-condensed": "^5.2.0",
     "@fontsource/cormorant-garamond": "^5.2.0",
     "@supabase/supabase-js": "~2.118.0",
-    "abcjs": "^6.6.2",
+    "abcjs": "~6.6.2",
     "react": "~19.2.9",
     "react-dom": "~19.2.9"
   },
