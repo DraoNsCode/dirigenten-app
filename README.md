@@ -1,4 +1,4 @@
-# Chor-App
+# Dirigenten-App
 
 Web-App für die Dirigenten des Gemeindechors: Probenplanung, gesungene Lieder im Gottesdienst und Repertoire.
 

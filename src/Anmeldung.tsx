@@ -29,7 +29,7 @@ export default function Anmeldung() {
     <div className="login">
       <header className="head">
         <div className="eyebrow">Gemeindechor</div>
-        <h1>Chor-App</h1>
+        <h1>Dirigenten-App</h1>
         <div className="goldline" />
       </header>
       <p className="note">

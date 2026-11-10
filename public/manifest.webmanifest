@@ -1,6 +1,6 @@
 {
-  "name": "Chor-App",
-  "short_name": "Chor-App",
+  "name": "Dirigenten-App",
+  "short_name": "Dirigenten-App",
   "description": "Probenplanung und Repertoire für die Dirigenten des Gemeindechors",
   "lang": "de",
   "start_url": "./",
