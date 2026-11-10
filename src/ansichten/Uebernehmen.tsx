@@ -45,7 +45,7 @@ export default function Uebernehmen({ evId }: { evId: string }) {
 
   return (
     <>
-      <Zurueck text="Als Nächstes" />
+      <Zurueck text="Wochenplan" />
       <Kopf eyebrow={ereignisTitel(ev)} titel="Aus der Probe übernehmen" klein />
       <p className="note">
         {probe ? `Lieder der Probe vom ${kurzDatum(probe.datum)}` : 'Lieder der Probe.'} Wähle aus, was gesungen wird.

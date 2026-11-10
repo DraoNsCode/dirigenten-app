@@ -6,7 +6,7 @@ import { useMeldung } from '../meldung'
 import { useNav } from '../navigation'
 import { Kreuz, Links, Plus, Rechts, Uebernehmen } from '../symbole'
 
-// Startseite „Als Nächstes“: alle Termine einer Woche in Datumsreihenfolge.
+// Startseite „Wochenplan“: alle Termine einer Woche in Datumsreihenfolge.
 
 export default function Woche() {
   const nav = useNav()
@@ -46,7 +46,7 @@ export default function Woche() {
 
   return (
     <div className="wischflaeche" onTouchStart={beiStart} onTouchEnd={beiEnde}>
-      <Kopf eyebrow={wochenTitel(montag)} titel="Als Nächstes" rechts={wochenwahl} />
+      <Kopf eyebrow={wochenTitel(montag)} titel="Wochenplan" rechts={wochenwahl} />
       {daten.stand.art === 'laedt' && <p className="note">Lädt …</p>}
       {daten.stand.art === 'fehler' && <Fehlerkarte text={daten.stand.text} nochmal={daten.neuLaden} />}
       {daten.stand.art === 'bereit' &&

@@ -120,7 +120,8 @@ h1 { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 3
 
 /* ---------- Woche, Eintragen, Listen (aus dem Prototyp) ---------- */
 h1.small { font-size: 30px; line-height: 1.1; }
-.headrow { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.headrow { display: flex; align-items: center; justify-content: space-between; gap: 4px 8px; flex-wrap: wrap; }
+.headrow > :last-child { margin-left: auto; }
 .weekrow { display: flex; align-items: center; gap: 2px; }
 .iconbtn {
   width: 44px; height: 44px; border: 0; background: transparent; color: var(--link);

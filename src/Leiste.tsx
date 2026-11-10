@@ -3,7 +3,7 @@ import { Kalender, MenueSymbol, Noten } from './symbole'
 export type Reiter = 'woche' | 'lieder' | 'menue'
 
 const REITER: { id: Reiter; text: string; Symbol: typeof Kalender }[] = [
-  { id: 'woche', text: 'Als Nächstes', Symbol: Kalender },
+  { id: 'woche', text: 'Wochenplan', Symbol: Kalender },
   { id: 'lieder', text: 'Lieder', Symbol: Noten },
   { id: 'menue', text: 'Menü', Symbol: MenueSymbol },
 ]

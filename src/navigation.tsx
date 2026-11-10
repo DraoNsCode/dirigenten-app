@@ -32,7 +32,7 @@ export type Navigation = {
   geh: (a: Ansicht) => void
   zurueck: () => void
   reiter: (r: Reiter) => void
-  /** Woche mit diesem Datum unter „Als Nächstes“ öffnen */
+  /** Woche mit diesem Datum unter „Wochenplan“ öffnen */
   zurWoche: (datum: Date) => void
   /** Wochen-Abstand zur aktuellen Woche (0 = diese Woche) */
   woche: number

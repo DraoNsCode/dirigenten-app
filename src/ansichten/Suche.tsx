@@ -36,7 +36,7 @@ export default function Suche({ evId }: { evId: string }) {
 
   return (
     <>
-      <Zurueck text="Als Nächstes" />
+      <Zurueck text="Wochenplan" />
       <Kopf eyebrow={ereignisTitel(ev)} titel={istProbe ? 'Lied vormerken' : 'Lied eintragen'} klein />
       <div className="search">
         <Lupe />

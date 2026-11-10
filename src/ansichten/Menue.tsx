@@ -18,7 +18,7 @@ export default function Menue({ email }: { email: string }) {
 
   return (
     <>
-      <Kopf eyebrow="Seltener gebraucht" titel="Menü" />
+      <Kopf eyebrow="Weitere Funktionen" titel="Menü" />
 
       <ul className="menu">
         <li>
