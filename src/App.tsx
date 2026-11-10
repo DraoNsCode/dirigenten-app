@@ -14,6 +14,7 @@ import Lieder from './ansichten/Lieder'
 import Menue from './ansichten/Menue'
 import Liste from './ansichten/Liste'
 import LiedSeite from './ansichten/LiedSeite'
+import LiedNeu from './ansichten/LiedNeu'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
@@ -81,6 +82,7 @@ function Hauptansicht({ email }: { email: string }) {
     () => ({
       // Breit: eine neue Ansicht ersetzt die rechte Seite; sonst liegt sie auf dem Stapel
       geh: (a) => setStapel((s) => (breit ? [s[0], a] : [...s, a])),
+      ersetze: (a) => setStapel((s) => (s.length > 1 ? [...s.slice(0, -1), a] : [...s, a])),
       zurueck: () => setStapel((s) => (s.length > 1 ? s.slice(0, -1) : s)),
       reiter: wechsleReiter,
       zurWoche: (datum) => {
@@ -115,6 +117,8 @@ function Hauptansicht({ email }: { email: string }) {
         return <Liste art={a.art} />
       case 'lied':
         return <LiedSeite key={a.id} id={a.id} />
+      case 'neu':
+        return <LiedNeu />
     }
   }
 
@@ -153,7 +157,7 @@ function LeererBereich({ reiter }: { reiter: Reiter }) {
   const text: Record<Reiter, string> = {
     woche: 'Bei einem Termin „Lied eintragen“ oder „Lied vormerken“ wählen oder ein Lied antippen – es erscheint hier.',
     lieder: 'Ein Lied auswählen, um Angaben, Noten und Hinweise zu sehen.',
-    menue: 'Gottesdienste oder Proben wählen.',
+    menue: 'Gottesdienste, Proben oder „Lied hinzufügen“ wählen.',
   }
   return (
     <div className="leer-bereich">

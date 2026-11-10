@@ -10,6 +10,7 @@ export type Ansicht =
   | { v: 'menue' }
   | { v: 'liste'; art: 'gd' | 'pr' }
   | { v: 'lied'; id: number }
+  | { v: 'neu' }
 
 /** Einstellungen im Reiter Lieder; bleiben erhalten, solange die App offen ist */
 export type LiederEinstellung = {
@@ -30,6 +31,8 @@ export const LIEDER_ANFANG: LiederEinstellung = {
 
 export type Navigation = {
   geh: (a: Ansicht) => void
+  /** oberste Ansicht durch eine andere ersetzen (z. B. nach dem Anlegen eines Liedes dessen Seite) */
+  ersetze: (a: Ansicht) => void
   zurueck: () => void
   reiter: (r: Reiter) => void
   /** Woche mit diesem Datum unter „Wochenplan“ öffnen */

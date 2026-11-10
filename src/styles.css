@@ -246,6 +246,46 @@ textarea { width: 100%; min-height: 84px; padding: 10px 12px; border: 1px solid 
 .selectbox span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 
+/* ---------- Lieder außerhalb des Liederbuchs: anlegen, Noten, löschen ---------- */
+.formular { display: flex; flex-direction: column; gap: 18px; }
+.zweispaltig { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+@media (max-width: 359px) { .zweispaltig { grid-template-columns: minmax(0, 1fr); } }
+.selectbox.breit { width: 100%; height: 44px; }
+.selectbox.breit > span:first-child { flex: 1; min-width: 0; }
+.chip.stufe { min-width: 44px; justify-content: center; }
+.dateiknopf { position: relative; cursor: pointer; }
+.field .dateiknopf input, .dateiknopf input {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: 0; border: 0; opacity: 0; overflow: hidden; pointer-events: none;
+}
+.dateiknopf.aus { opacity: .5; cursor: default; }
+.dateiknopf:focus-within { outline: 2px solid var(--brand); outline-offset: 2px; }
+.ghost.dateiknopf { display: inline-flex; align-items: center; }
+.dateifeld {
+  display: flex; align-items: center; gap: 10px; min-height: 52px; padding: 0 14px;
+  border: 1px dashed var(--dash); border-radius: 8px; background: transparent; color: var(--link); font-weight: 600; font-size: 15px;
+}
+.dateifeld > svg { flex-shrink: 0; }
+/* Die Dateiauswahl ist ein <label>; im Formular nicht wie eine Feldbeschriftung aussehen lassen */
+.field label.dateiknopf { font-family: inherit; font-size: 15px; font-weight: 600; letter-spacing: normal; text-transform: none; color: var(--link); }
+.dateifeld .later { margin-left: auto; font-weight: 400; }
+.dateifeld.gewaehlt { border-style: solid; border-color: var(--line); background: var(--card); color: var(--ink); font-weight: 500; padding-right: 0; }
+.dateifeld .dateiname { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dateifeld.gewaehlt .later { margin-left: 0; white-space: nowrap; }
+.aehnlich { display: flex; flex-direction: column; gap: 2px; padding: 10px 12px; border-radius: 8px; background: var(--surface2); font-size: 14px; color: var(--body); }
+.aehnlich b { font-family: var(--font-label); font-weight: 600; color: var(--link); margin-right: 4px; }
+.rueckfrage { display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+.rueckfrage p { margin: 0; font-size: 15px; line-height: 1.4; color: var(--ink); }
+.rueckfrage p.note { font-size: 14px; color: var(--muted); }
+.rueckfrage.gefahr { border-color: var(--danger); margin-top: 8px; }
+.textbtn.gefahr { color: var(--danger); margin-top: 8px; }
+.ghost.gefahr { border-color: var(--danger); color: var(--danger); }
+.ghost.voll-gefahr { border-color: var(--danger); background: var(--danger); color: var(--card); }
+@media (hover: hover) and (pointer: fine) {
+  .dateifeld:hover { border-color: var(--brand); }
+  .dateifeld.gewaehlt:hover { border-color: var(--line); }
+}
+
+
 /* ---------- Anzeigemodi: schmal (Handy hochkant), mittel, breit ---------- */
 /* Inhalt einer Ansicht; im schmalen Modus volle Breite wie bisher */
 .inhalt { display: flex; flex-direction: column; gap: 14px; width: 100%; margin: 0 auto; min-height: 100%; }

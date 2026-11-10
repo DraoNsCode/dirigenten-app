@@ -42,12 +42,13 @@ export default function Menue({ email }: { email: string }) {
           </button>
         </li>
         <li>
-          <button className="menubtn" type="button" disabled>
+          <button className="menubtn" type="button" onClick={() => nav.geh({ v: 'neu' })}>
             <Plus />
             <span className="main">
               <span className="t">Lied hinzufügen</span>
-              <span className="d">kommt in einer späteren Version</span>
+              <span className="d">Lied außerhalb des Liederbuchs anlegen, Noten als PDF</span>
             </span>
+            <Rechts size={18} />
           </button>
         </li>
       </ul>

@@ -11,6 +11,22 @@ export type Eintrag = Pick<Zeile<'eintraege'>, 'datum' | 'termin' | 'lied_id' | 
 
 export type LiedAenderung = Partial<Pick<Lied, 'status' | 'dirigent_id' | 'klavierspieler_id'>>
 
+/** Angaben für ein neues Lied außerhalb des Liederbuchs; Kürzel (ZD/ZR) und Nummer vergibt die Datenbank */
+export type NeuesLied = Pick<Lied, 'titel' | 'kategorie_id' | 'schwierigkeit' | 'status' | 'dirigent_id' | 'klavierspieler_id'> & {
+  sprache: 'D' | 'R'
+}
+
+/** Größte erlaubte Noten-Datei (wie im Speicher eingestellt) */
+export const NOTEN_MAX_BYTES = 20 * 1024 * 1024
+
+/** Prüft eine gewählte Noten-Datei; gibt einen Hinweistext zurück oder null, wenn sie passt */
+export function notenPruefen(datei: File): string | null {
+  const istPdf = datei.type === 'application/pdf' || /\.pdf$/i.test(datei.name)
+  if (!istPdf) return 'Bitte eine PDF-Datei wählen.'
+  if (datei.size > NOTEN_MAX_BYTES) return 'Die PDF ist größer als 20 MB.'
+  return null
+}
+
 type Stand = { art: 'laedt' } | { art: 'bereit' } | { art: 'fehler'; text: string }
 
 type Statistik = {
@@ -42,6 +58,12 @@ type DatenKontext = {
   aendereLied: (liedId: number, aenderung: LiedAenderung) => Promise<boolean>
   /** Anzahl offener Hinweise eines Liedes nach Änderungen auf der Lied-Seite */
   setzeOffeneHinweise: (liedId: number, anzahl: number) => void
+  /** Lied außerhalb des Liederbuchs anlegen; gibt das neue Lied zurück oder null */
+  liedAnlegen: (neu: NeuesLied) => Promise<Lied | null>
+  /** Noten eines Zettel-Liedes hochladen, ersetzen (datei) oder entfernen (null); gibt einen Fehlertext oder null zurück */
+  notenSetzen: (lied: Lied, datei: File | null) => Promise<string | null>
+  /** Zettel-Lied ganz löschen, mit Einträgen und Hinweisen; vorher wird `davor` ausgeführt (z. B. Seite schließen) */
+  liedLoeschen: (liedId: number, davor?: () => void) => Promise<boolean>
 }
 
 const Kontext = createContext<DatenKontext | null>(null)
@@ -243,6 +265,66 @@ export function DatenProvider({ children }: { children: ReactNode }) {
     })
   }, [])
 
+  const liedAnlegen = useCallback(
+    async (neu: NeuesLied) => {
+      const { data, error } = await supabase.from('lieder').insert(neu).select().single()
+      if (error || !data) {
+        zeige('Nicht angelegt – keine Verbindung?')
+        return null
+      }
+      setLiederListe((alt) => [...alt, data].sort(nachKennung))
+      return data
+    },
+    [zeige],
+  )
+
+  const notenSetzen = useCallback(async (lied: Lied, datei: File | null) => {
+    const speicher = supabase.storage.from('noten')
+    const alt = lied.noten_pfad
+    let pfad: string | null = null
+    if (datei) {
+      const problem = notenPruefen(datei)
+      if (problem) return problem
+      // Eindeutiger Dateiname je Hochladen, z. B. zettel/ZD003-1731250000000.pdf
+      pfad = `zettel/${lied.kuerzel}${String(lied.nummer).padStart(3, '0')}-${Date.now()}.pdf`
+      const hoch = await speicher.upload(pfad, datei, { contentType: 'application/pdf', upsert: false })
+      if (hoch.error) return 'Noten nicht hochgeladen – keine Verbindung?'
+    }
+    const { error } = await supabase.from('lieder').update({ noten_pfad: pfad }).eq('id', lied.id)
+    if (error) {
+      if (pfad) speicher.remove([pfad])
+      return 'Nicht gespeichert – keine Verbindung?'
+    }
+    setLiederListe((liste) => liste.map((l) => (l.id === lied.id ? { ...l, noten_pfad: pfad } : l)))
+    // Die alte Datei wird nicht mehr gebraucht
+    if (alt?.startsWith('zettel/')) speicher.remove([alt])
+    return null
+  }, [])
+
+  const liedLoeschen = useCallback(
+    async (liedId: number, davor?: () => void) => {
+      const { data, error } = await supabase.rpc('lied_loeschen', { lied: liedId })
+      if (error) {
+        if (error.code === 'P0002') {
+          zeige('Lied nicht gefunden – schon gelöscht?')
+          neuLaden()
+        } else zeige('Nicht gelöscht – keine Verbindung?')
+        return false
+      }
+      davor?.()
+      setLiederListe((alt) => alt.filter((l) => l.id !== liedId))
+      setEintraege((alt) => alt.filter((e) => e.lied_id !== liedId))
+      setOffeneHinweise((alt) => {
+        const neu = new Map(alt)
+        neu.delete(liedId)
+        return neu
+      })
+      if (data?.startsWith('zettel/')) supabase.storage.from('noten').remove([data])
+      return true
+    },
+    [zeige, neuLaden],
+  )
+
   const wert: DatenKontext = {
     stand,
     lieder,
@@ -260,6 +342,9 @@ export function DatenProvider({ children }: { children: ReactNode }) {
     uebernehmen,
     aendereLied,
     setzeOffeneHinweise,
+    liedAnlegen,
+    notenSetzen,
+    liedLoeschen,
   }
   return <Kontext.Provider value={wert}>{children}</Kontext.Provider>
 }
@@ -277,7 +362,7 @@ export const STATUS_TEXT: Record<string, string> = {
 /** Reihenfolge für Sortierungen: erlernt vor in Arbeit vor unbekannt */
 export const STATUS_RANG: Record<string, number> = { erlernt: 0, in_arbeit: 1, unbekannt: 2 }
 
-/** Nach Kennung sortieren: D vor R vor anderen Kürzeln, dann nach Nummer */
+/** Nach Kennung sortieren: D, R, dann ZD, ZR (außerhalb des Liederbuchs), jeweils nach Nummer */
 export const nachKennung = (a: Lied, b: Lied) => a.kuerzel.localeCompare(b.kuerzel) || a.nummer - b.nummer
 
 /** Suchtext vereinheitlichen: Kleinbuchstaben, ohne Akzente/Umlautpunkte, ohne Apostrophe */

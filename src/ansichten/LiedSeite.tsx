@@ -1,15 +1,17 @@
-import { useEffect, useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { Kopf, Zurueck } from '../bausteine'
-import { kennung, STATUS_TEXT, useDaten } from '../daten'
+import { kennung, STATUS_TEXT, useDaten, type Lied } from '../daten'
 import type { Zeile } from '../datenbank.types'
 import { ausIso, ereignisAusId, ereignisTitel, heute, iso, kurzDatum } from '../kalender'
 import { useMeldung } from '../meldung'
 import { useNav } from '../navigation'
 import { supabase } from '../supabase'
 import { Datei, Plus, Runter } from '../symbole'
+import { DateiKnopf } from './NotenWahl'
 
 // Lied-Seite: Angaben zum Lied, Status ändern, Noten öffnen, gesungen am, Hinweise.
 // Schwierigkeit und Thema sind fest eingestellt und hier nur zu sehen.
+// Lieder außerhalb des Liederbuchs (ZD/ZR): Noten hochladen, ersetzen, entfernen; Lied ganz löschen.
 
 type Hinweis = Zeile<'hinweise'>
 type Art = 'notiz' | 'problem' | 'uebeansatz'
@@ -21,29 +23,32 @@ const ARTEN: [Art, string][] = [
 const ART_TEXT: Record<string, string> = Object.fromEntries(ARTEN)
 const ART_KLASSE: Record<string, string> = { notiz: 'notiz', problem: 'problem', uebeansatz: 'uebe' }
 
-const ZURUECK_TEXT: Record<string, string> = { woche: 'Wochenplan', lieder: 'Lieder' }
+const ZURUECK_TEXT: Record<string, string> = { woche: 'Wochenplan', lieder: 'Lieder', menue: 'Menü' }
 
 export default function LiedSeite({ id }: { id: number }) {
   const nav = useNav()
   const daten = useDaten()
   const zeige = useMeldung()
   const lied = daten.lieder.get(id)
-  const [notenUrl, setNotenUrl] = useState<string | null | 'fehler'>(null)
+  const [noten, setNoten] = useState<{ pfad: string; url: string } | null>(null)
+  const pfad = lied?.noten_pfad ?? null
+  // Link gilt nur für die Datei, für die er erzeugt wurde (nach dem Ersetzen neu erzeugen)
+  const notenUrl = noten && noten.pfad === pfad ? noten.url : null
 
   // Noten-Link vorab erzeugen, damit „Noten öffnen“ ein direkter Link ist (zuverlässig auf dem iPhone)
   useEffect(() => {
-    if (!lied?.noten_pfad) return
+    if (!pfad) return
     let aktiv = true
     supabase.storage
       .from('noten')
-      .createSignedUrl(lied.noten_pfad, 3600)
+      .createSignedUrl(pfad, 3600)
       .then(({ data, error }) => {
-        if (aktiv) setNotenUrl(error || !data ? 'fehler' : data.signedUrl)
+        if (aktiv) setNoten({ pfad, url: error || !data ? 'fehler' : data.signedUrl })
       })
     return () => {
       aktiv = false
     }
-  }, [lied?.noten_pfad])
+  }, [pfad])
 
   if (!lied) {
     return (
@@ -145,7 +150,7 @@ export default function LiedSeite({ id }: { id: number }) {
       </dl>
 
       {lied.noten_pfad &&
-        (typeof notenUrl === 'string' && notenUrl !== 'fehler' ? (
+        (notenUrl && notenUrl !== 'fehler' ? (
           <a className="primary links" href={notenUrl} target="_blank" rel="noopener noreferrer">
             <Datei />
             <span>Noten öffnen</span>
@@ -157,6 +162,7 @@ export default function LiedSeite({ id }: { id: number }) {
             <span>{notenUrl === 'fehler' ? 'Noten nicht erreichbar' : 'Noten werden vorbereitet …'}</span>
           </button>
         ))}
+      {!lied.im_buch && <ZettelNoten lied={lied} />}
 
       {gesungenAm.length > 0 && (
         <section className="section">
@@ -170,7 +176,141 @@ export default function LiedSeite({ id }: { id: number }) {
       )}
 
       <Hinweise liedId={id} />
+
+      {!lied.im_buch && <LiedLoeschen lied={lied} />}
     </>
+  )
+}
+
+// ---------- Lieder außerhalb des Liederbuchs ----------
+
+/** Noten hochladen, ersetzen oder entfernen (nur Zettel-Lieder) */
+function ZettelNoten({ lied }: { lied: Lied }) {
+  const daten = useDaten()
+  const zeige = useMeldung()
+  const [laeuft, setLaeuft] = useState(false)
+  const [entfernenFragen, setEntfernenFragen] = useState(false)
+
+  async function setze(datei: File | null) {
+    setLaeuft(true)
+    const problem = await daten.notenSetzen(lied, datei)
+    setLaeuft(false)
+    setEntfernenFragen(false)
+    if (problem) zeige(problem)
+    else zeige(datei ? (lied.noten_pfad ? 'Noten ersetzt' : 'Noten hochgeladen') : 'Noten entfernt')
+  }
+
+  if (laeuft) return <p className="note">Noten werden gespeichert …</p>
+
+  if (!lied.noten_pfad) {
+    return (
+      <DateiKnopf className="dateifeld" onWahl={setze}>
+        <Datei />
+        <span>Noten hochladen (PDF)</span>
+      </DateiKnopf>
+    )
+  }
+
+  if (entfernenFragen) {
+    return (
+      <div className="rueckfrage">
+        <p>Noten wirklich entfernen? Die PDF wird gelöscht.</p>
+        <div className="btnrow">
+          <button className="ghost gefahr" type="button" onClick={() => setze(null)}>
+            Entfernen
+          </button>
+          <button className="ghost plain" type="button" onClick={() => setEntfernenFragen(false)}>
+            Abbrechen
+          </button>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="btnrow">
+      <DateiKnopf className="ghost" onWahl={setze}>
+        Noten ersetzen
+      </DateiKnopf>
+      <button className="ghost plain" type="button" onClick={() => setEntfernenFragen(true)}>
+        Noten entfernen
+      </button>
+    </div>
+  )
+}
+
+/** Zettel-Lied ganz löschen: mit allen Einträgen und Hinweisen (Daniel, 10.11.2026) */
+function LiedLoeschen({ lied }: { lied: Lied }) {
+  const nav = useNav()
+  const daten = useDaten()
+  const zeige = useMeldung()
+  const [fragen, setFragen] = useState(false)
+  const [hinweise, setHinweise] = useState<number | null>(null)
+  const [laeuft, setLaeuft] = useState(false)
+  const karte = useRef<HTMLElement>(null)
+
+  // Die Rückfrage steht ganz unten: ins Bild holen
+  useEffect(() => {
+    if (fragen) karte.current?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
+  }, [fragen, hinweise])
+
+  const termine = daten.ereignisIds.filter((eid) => (daten.proEreignis.get(eid) ?? []).includes(lied.id)).length
+
+  async function oeffnen() {
+    setFragen(true)
+    setHinweise(null)
+    const { count } = await supabase.from('hinweise').select('id', { count: 'exact', head: true }).eq('lied_id', lied.id)
+    setHinweise(count ?? 0)
+  }
+
+  async function loeschen() {
+    setLaeuft(true)
+    const name = kennung(lied)
+    const ok = await daten.liedLoeschen(lied.id, () => nav.zurueck())
+    if (ok) zeige(`${name} gelöscht`)
+    else setLaeuft(false)
+  }
+
+  const mitloeschen: string[] = []
+  if (termine > 0) mitloeschen.push(termine === 1 ? '1 Eintrag in Gottesdiensten oder Proben' : `${termine} Einträge in Gottesdiensten und Proben`)
+  if (hinweise) mitloeschen.push(hinweise === 1 ? '1 Hinweis' : `${hinweise} Hinweise`)
+  if (lied.noten_pfad) mitloeschen.push('die Noten')
+  const aufzaehlung =
+    mitloeschen.length > 1 ? `${mitloeschen.slice(0, -1).join(', ')} und ${mitloeschen[mitloeschen.length - 1]}` : mitloeschen[0]
+
+  if (!fragen) {
+    return (
+      <button className="textbtn gefahr" type="button" onClick={oeffnen}>
+        Lied löschen …
+      </button>
+    )
+  }
+
+  return (
+    <section className="rueckfrage gefahr" aria-label="Lied löschen" ref={karte}>
+      <p>
+        <b>
+          {kennung(lied)} „{lied.titel}“
+        </b>{' '}
+        endgültig löschen?
+      </p>
+      {hinweise === null ? (
+        <p className="note">Prüft, was mitgelöscht wird …</p>
+      ) : (
+        <p className="note">
+          {aufzaehlung ? `Mitgelöscht werden ${aufzaehlung}.` : 'Das Lied ist nirgends eingetragen und hat keine Hinweise.'} Das lässt
+          sich nicht rückgängig machen.
+        </p>
+      )}
+      <div className="btnrow">
+        <button className="ghost voll-gefahr" type="button" onClick={loeschen} disabled={laeuft || hinweise === null}>
+          {laeuft ? 'Wird gelöscht …' : 'Endgültig löschen'}
+        </button>
+        <button className="ghost plain" type="button" onClick={() => setFragen(false)} disabled={laeuft}>
+          Abbrechen
+        </button>
+      </div>
+    </section>
   )
 }
 

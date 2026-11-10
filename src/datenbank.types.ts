@@ -144,9 +144,10 @@ export type Database = {
           im_buch?: boolean
           kategorie_id?: number | null
           klavierspieler_id?: number | null
-          kuerzel: string
+          /** vergibt die Datenbank bei Zettel-Liedern selbst */
+          kuerzel?: string
           noten_pfad?: string | null
-          nummer: number
+          nummer?: number
           schwierigkeit?: number | null
           sprache: string
           status?: string
@@ -182,7 +183,12 @@ export type Database = {
       }
     }
     Views: { [_ in never]: never }
-    Functions: { [_ in never]: never }
+    Functions: {
+      lied_loeschen: {
+        Args: { lied: number }
+        Returns: string | null
+      }
+    }
     Enums: { [_ in never]: never }
     CompositeTypes: { [_ in never]: never }
   }
