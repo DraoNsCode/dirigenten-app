@@ -23,7 +23,7 @@ const ARTEN: [Art, string][] = [
 const ART_TEXT: Record<string, string> = Object.fromEntries(ARTEN)
 const ART_KLASSE: Record<string, string> = { notiz: 'notiz', problem: 'problem', uebeansatz: 'uebe' }
 
-const ZURUECK_TEXT: Record<string, string> = { woche: 'Wochenplan', lieder: 'Lieder', menue: 'Menü' }
+const ZURUECK_TEXT: Record<string, string> = { woche: 'Wochenplan', lieder: 'Lieder', menue: 'Menü', uebung: 'Übung', erklaerung: 'Erklärung' }
 
 export default function LiedSeite({ id }: { id: number }) {
   const nav = useNav()

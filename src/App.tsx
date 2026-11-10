@@ -5,7 +5,17 @@ import Anmeldung from './Anmeldung'
 import Leiste, { type Reiter } from './Leiste'
 import { DatenProvider } from './daten'
 import { MeldungProvider } from './meldung'
-import { BereichKontext, LIEDER_ANFANG, NavKontext, useLayout, type Ansicht, type LiederEinstellung, type Navigation } from './navigation'
+import {
+  BereichKontext,
+  LIEDER_ANFANG,
+  NavKontext,
+  UEBUNGEN_ANFANG,
+  useLayout,
+  type Ansicht,
+  type LiederEinstellung,
+  type Navigation,
+  type UebungenEinstellung,
+} from './navigation'
 import { heute, wochenAbstand } from './kalender'
 import Woche from './ansichten/Woche'
 import Suche from './ansichten/Suche'
@@ -15,10 +25,15 @@ import Menue from './ansichten/Menue'
 import Liste from './ansichten/Liste'
 import LiedSeite from './ansichten/LiedSeite'
 import LiedNeu from './ansichten/LiedNeu'
+import Uebungen from './ansichten/Uebungen'
+import UebungSeite from './ansichten/UebungSeite'
+import ErklaerungSeite from './ansichten/ErklaerungSeite'
+import { SammlungProvider } from './uebungen/sammlung'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
   lieder: { v: 'lieder' },
+  uebungen: { v: 'uebungen' },
   menue: { v: 'menue' },
 }
 
@@ -45,7 +60,9 @@ export default function App() {
   return (
     <MeldungProvider>
       <DatenProvider>
-        <Hauptansicht email={sitzung.user.email ?? ''} />
+        <SammlungProvider>
+          <Hauptansicht email={sitzung.user.email ?? ''} />
+        </SammlungProvider>
       </DatenProvider>
     </MeldungProvider>
   )
@@ -58,6 +75,7 @@ function Hauptansicht({ email }: { email: string }) {
   const [stapel, setStapel] = useState<Ansicht[]>([START.woche])
   const [woche, setWoche] = useState(0)
   const [lieder, setLieder] = useState<LiederEinstellung>(LIEDER_ANFANG)
+  const [uebungen, setUebungen] = useState<UebungenEinstellung>(UEBUNGEN_ANFANG)
 
   // Bereich, der beim erneuten Tippen auf den Reiter nach oben scrollt (schmal: die Ansicht, breit: die Liste links)
   const ansicht = useRef<HTMLElement>(null)
@@ -95,10 +113,12 @@ function Hauptansicht({ email }: { email: string }) {
       vorher: stapel.length > 1 ? stapel[stapel.length - 2] : undefined,
       lieder,
       setLieder,
+      uebungen,
+      setUebungen,
       layout,
       detail,
     }),
-    [woche, wechsleReiter, stapel, lieder, layout, breit, detail],
+    [woche, wechsleReiter, stapel, lieder, uebungen, layout, breit, detail],
   )
 
   function zeige(a: Ansicht) {
@@ -119,6 +139,12 @@ function Hauptansicht({ email }: { email: string }) {
         return <LiedSeite key={a.id} id={a.id} />
       case 'neu':
         return <LiedNeu />
+      case 'uebungen':
+        return <Uebungen />
+      case 'uebung':
+        return <UebungSeite key={a.id} id={a.id} />
+      case 'erklaerung':
+        return <ErklaerungSeite key={a.id} id={a.id} />
     }
   }
 
@@ -157,6 +183,7 @@ function LeererBereich({ reiter }: { reiter: Reiter }) {
   const text: Record<Reiter, string> = {
     woche: 'Bei einem Termin „Lied eintragen“ oder „Lied vormerken“ wählen oder ein Lied antippen – es erscheint hier.',
     lieder: 'Ein Lied auswählen, um Angaben, Noten und Hinweise zu sehen.',
+    uebungen: 'Eine Übung oder Erklärung auswählen, um sie hier zu lesen.',
     menue: 'Gottesdienste, Proben oder „Lied hinzufügen“ wählen.',
   }
   return (

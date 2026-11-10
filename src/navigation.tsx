@@ -11,6 +11,9 @@ export type Ansicht =
   | { v: 'liste'; art: 'gd' | 'pr' }
   | { v: 'lied'; id: number }
   | { v: 'neu' }
+  | { v: 'uebungen' }
+  | { v: 'uebung'; id: string }
+  | { v: 'erklaerung'; id: string }
 
 /** Einstellungen im Reiter Lieder; bleiben erhalten, solange die App offen ist */
 export type LiederEinstellung = {
@@ -29,6 +32,24 @@ export const LIEDER_ANFANG: LiederEinstellung = {
   sortierung: 'haeufigkeit',
 }
 
+/** Einstellungen im Reiter Übungen; bleiben erhalten, solange die App offen ist */
+export type UebungenEinstellung = {
+  suche: string
+  /** Kennung eines Bereichs oder 'alle' */
+  bereich: string
+  schwierigkeit: 'alle' | '1' | '2' | '3'
+  stand: 'alle' | 'entwurf' | 'abgenommen' | 'ueberarbeiten'
+  art: 'alle' | 'uebung' | 'erklaerung'
+}
+
+export const UEBUNGEN_ANFANG: UebungenEinstellung = {
+  suche: '',
+  bereich: 'alle',
+  schwierigkeit: 'alle',
+  stand: 'alle',
+  art: 'alle',
+}
+
 export type Navigation = {
   geh: (a: Ansicht) => void
   /** oberste Ansicht durch eine andere ersetzen (z. B. nach dem Anlegen eines Liedes dessen Seite) */
@@ -44,6 +65,8 @@ export type Navigation = {
   vorher: Ansicht | undefined
   lieder: LiederEinstellung
   setLieder: (e: LiederEinstellung) => void
+  uebungen: UebungenEinstellung
+  setUebungen: (e: UebungenEinstellung) => void
   /** Anzeigemodus nach Bildschirmbreite */
   layout: Layout
   /** Im breiten Modus die Ansicht im rechten Bereich (sonst die oberste Ansicht, falls nicht die Wurzel) */

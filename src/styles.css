@@ -52,10 +52,10 @@ button, input, select, textarea { font: inherit; color: inherit; }
 /* Leiste unten: Abstand zum unteren Rand und zu den abgerundeten Ecken,
    damit keine System-Gesten (Siri, Home-Leiste) ausgelöst werden. */
 .tabs {
-  flex-shrink: 0; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex-shrink: 0; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
   border-top: 1px solid var(--line); background: var(--card);
   padding-top: 2px; padding-bottom: max(18px, env(safe-area-inset-bottom, 0px));
-  padding-left: max(18px, env(safe-area-inset-left, 0px)); padding-right: max(18px, env(safe-area-inset-right, 0px));
+  padding-left: max(10px, env(safe-area-inset-left, 0px)); padding-right: max(10px, env(safe-area-inset-right, 0px));
 }
 .tab {
   position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
@@ -331,6 +331,76 @@ textarea { width: 100%; min-height: 84px; padding: 10px 12px; border: 1px solid 
   .xbtn:hover { color: var(--danger); }
   .chip:hover, .pill-btn:hover, .selectbox:hover { border-color: var(--brand); }
 }
+
+/* ---------- Reiter Übungen ---------- */
+.zuruecksetzen-inline { height: 36px; font-size: 14px; }
+.gruppe-titel { margin: 10px 0 -2px; font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.15; color: var(--ink); }
+.uebungs-abschnitt h3 { margin-top: 2px; }
+.meta .stichwort { font-style: italic; }
+.tag.erklaerung { background: var(--tag-uebe-bg); color: var(--tag-uebe-fg); }
+.tag.stand-entwurf { background: var(--tag-notiz-bg); color: var(--tag-notiz-fg); }
+.tag.stand-ueberarbeiten { background: var(--tag-problem-bg); color: var(--tag-problem-fg); }
+.tag.stand-abgenommen { background: var(--tag-uebe-bg); color: var(--tag-uebe-fg); }
+.listbtn.statisch { cursor: default; }
+.listbtn:disabled { cursor: default; }
+.listbtn:disabled .title { color: var(--brand); font-weight: 600; }
+
+/* Übungs- und Erklärungsseite */
+.ue-ziel { margin: 0; font-size: 17px; line-height: 1.45; color: var(--ink); }
+.ue-bild { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; border-left: 3px solid var(--gold); background: var(--surface2); border-radius: 0 8px 8px 0; }
+.ue-bild p { margin: 0; font-size: 15px; line-height: 1.4; color: var(--body); }
+.ue-bild .ue-stichwort { font-family: var(--font-display); font-weight: 700; font-size: 20px; line-height: 1.2; color: var(--ink); }
+dl.facts > div.breit { grid-column: 1 / -1; }
+.ue-abschnitt { display: flex; flex-direction: column; gap: 8px; }
+.ue-abschnitt h2 { margin: 6px 0 0; font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: .16em; text-transform: uppercase; color: var(--label); }
+.ue-liste { margin: 0; padding-left: 22px; display: flex; flex-direction: column; gap: 6px; font-size: 16px; line-height: 1.45; color: var(--ink); }
+.ue-liste li::marker { color: var(--label); font-weight: 600; }
+.ue-liste.klein { font-size: 14px; color: var(--body); }
+.ue-liste a { color: var(--link); }
+.ue-text { display: flex; flex-direction: column; gap: 10px; margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink); }
+.ue-text p { margin: 0; }
+.ue-silben { margin: 0; font-size: 17px; font-weight: 600; color: var(--ink); }
+.ue-stufen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.ue-stufen > li { display: flex; flex-direction: column; gap: 6px; padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+.ue-stufen p { margin: 0; color: var(--ink); line-height: 1.4; }
+.ue-stufenkopf { display: flex; align-items: baseline; gap: 10px; color: var(--ink); }
+.ue-weiteres { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; padding-top: 12px; border-top: 1px solid var(--line-soft); }
+.ue-marken { display: flex; flex-direction: column; gap: 6px; }
+.ue-markenreihe { display: flex; flex-wrap: wrap; gap: 6px; }
+.marke { display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 13px; background: var(--surface2); color: var(--body); font-size: 13px; }
+
+/* Noten */
+.notenblock { display: flex; flex-direction: column; gap: 10px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+.noten-ueberschrift { margin: 0; font-weight: 600; color: var(--ink); }
+.noten-steuerung { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px; }
+.noten-art { font-size: 14px; color: var(--muted); }
+.segment { display: inline-flex; border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.segment button { height: 34px; padding: 0 14px; border: 0; background: transparent; color: var(--link); font-weight: 600; font-size: 14px; cursor: pointer; }
+.segment button + button { border-left: 1px solid var(--line); }
+.segment button[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); }
+.transponieren { display: inline-flex; align-items: center; gap: 6px; }
+.rund {
+  width: 36px; height: 36px; border-radius: 18px; border: 1px solid var(--line); background: var(--card);
+  color: var(--link); font-size: 20px; line-height: 1; display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+}
+.rund:disabled { opacity: .4; cursor: default; }
+.tonart { display: flex; flex-direction: column; align-items: center; min-width: 86px; line-height: 1.15; }
+.tonart strong { font-size: 15px; color: var(--ink); }
+.tonart span { font-size: 12px; color: var(--muted); }
+.noten { width: 100%; color: var(--ink); overflow-x: auto; }
+.noten svg text:not(.abcjs-lyric) { font-family: var(--font-body); }
+.noten .abcjs-annotation { font-style: italic; fill: var(--muted); }
+.noten .abcjs-note.is-on, .noten .abcjs-note.is-on path { fill: var(--gold); }
+.noten-hinweis { margin: 0; font-size: 14px; color: var(--body); }
+.noten-tempo { margin: 0; font-size: 13px; color: var(--muted); }
+
+/* Grafiken: Farben der Sammlung auf die der App abbilden */
+.grafik {
+  --accent: var(--brand); --accent-ink: var(--on-brand); --accent-soft: var(--surface2); --surface: var(--card); --warn: var(--label);
+  margin: 0; display: flex; flex-direction: column; gap: 8px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 8px; background: var(--card);
+}
+.grafik svg { display: block; width: 100%; max-width: 480px; height: auto; margin: 0 auto; color: var(--ink); font-family: var(--font-body); }
+.grafik figcaption { font-size: 14px; color: var(--muted); line-height: 1.4; }
 
 /* Ohne Leiste unten sitzt die Rückmeldung tiefer */
 @media (min-width: 600px), (orientation: landscape) and (max-height: 500px) {

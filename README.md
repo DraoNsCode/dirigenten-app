@@ -1,6 +1,6 @@
 # Dirigenten-App
 
-Web-App für die Dirigenten des Gemeindechors: Probenplanung, gesungene Lieder im Gottesdienst und Repertoire.
+Web-App für die Dirigenten des Gemeindechors: Probenplanung, gesungene Lieder im Gottesdienst, Repertoire und Übungen.
 
 - **Adresse:** https://draonscode.github.io/dirigenten-app/
 - **Auf dem Handy:** Adresse in Safari öffnen → Teilen → „Zum Home-Bildschirm“. Einmal anmelden, danach bleibt das Gerät angemeldet.
@@ -12,6 +12,7 @@ Web-App für die Dirigenten des Gemeindechors: Probenplanung, gesungene Lieder i
 | App (dieser Code) | GitHub Pages | Oberfläche; wird bei jeder Änderung auf `main` automatisch gebaut und veröffentlicht (`.github/workflows/veroeffentlichen.yml`) |
 | Daten | Supabase (Projekt `ogajbvuvehudedkdhadx`, Frankfurt) | Lieder, Kategorien, Einträge, Hinweise; Zugriff nur für angemeldete Konten |
 | Noten | Supabase Storage, privater Speicher `noten` | eine PDF pro Lied |
+| Übungen | Supabase Storage, privater Speicher `uebungen` | `uebungen.json` und `grafiken.json` aus dem privaten Repo `chor-uebungen`; dessen Ablauf „In die Dirigenten-App laden“ baut und lädt sie bei jeder Änderung auf `main` hoch. Die App liest nur. |
 
 Im Code stehen nur die Projektadresse und der **öffentliche** Schlüssel von Supabase. Der geheime Schlüssel gehört nie in dieses Repo.
 

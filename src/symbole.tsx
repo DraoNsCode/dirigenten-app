@@ -33,6 +33,15 @@ export function Noten({ size = 22 }: Props) {
   )
 }
 
+export function Stimmgabel({ size = 22 }: Props) {
+  return (
+    <svg {...basis(size)}>
+      <path d="M8.5 3v7.5a3.5 3.5 0 0 0 7 0V3" />
+      <path d="M12 14v7" />
+    </svg>
+  )
+}
+
 export function MenueSymbol({ size = 22 }: Props) {
   return (
     <svg {...basis(size)}>
