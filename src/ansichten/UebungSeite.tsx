@@ -4,7 +4,7 @@ import Grafik from '../uebungen/Grafik'
 import Noten from '../uebungen/Noten'
 import { PRUEFBAR_TEXT, RAHMEN_TEXT, SCHWIERIGKEIT_TEXT, schwierigkeitText } from '../uebungen/anzeige'
 import { useSammlung } from '../uebungen/sammlung'
-import { Abschnitt, Liederbuch, Liste, Marken, Quellen, StandMarke, Verweise } from '../uebungen/Teile'
+import { Abschnitt, AuswahlKnopf, Liederbuch, Liste, Marken, Quellen, StandMarke, Verweise } from '../uebungen/Teile'
 
 // Seite einer Übung: zunächst alle Angaben aus der Sammlung, damit Daniel die Einträge durchsehen kann.
 // Welche Angaben die App später zeigt, wird danach ausgewählt.
@@ -14,6 +14,7 @@ export const ZURUECK_TEXT: Partial<Record<Ansicht['v'], string>> = {
   uebung: 'Übung',
   erklaerung: 'Erklärung',
   lied: 'Lied',
+  auswahl: 'Auswahl',
 }
 
 export default function UebungSeite({ id }: { id: string }) {
@@ -43,6 +44,11 @@ export default function UebungSeite({ id }: { id: string }) {
       <Kopf eyebrow={haupt ? `${haupt.nr} · ${haupt.name}` : 'Übung'} titel={u.titel} klein />
 
       <p className="ue-ziel">{u.ziel}</p>
+      {u.stufen?.length ? (
+        <p className="note">Für die Probenfolien unten bei den Stufen eine Stufe auswählen.</p>
+      ) : (
+        <AuswahlKnopf punkt={{ art: 'uebung', id: u.id }} />
+      )}
       {(u.stichwort || u.bild) && (
         <div className="ue-bild">
           {u.stichwort && <p className="ue-stichwort">{u.stichwort}</p>}
@@ -104,6 +110,7 @@ export default function UebungSeite({ id }: { id: string }) {
                   {st.tempo ? <span className="meta">♩ = {st.tempo}</span> : null}
                 </div>
                 <p>{st.aenderung}</p>
+                <AuswahlKnopf punkt={{ art: 'uebung', id: u.id, stufe: st.stufe }} text={`Stufe ${st.stufe} zur Auswahl`} />
                 {st.noten?.map((n, i) => (
                   <Noten key={i} block={n} ueberschrift={st.noten!.length > 1 ? n.hinweis : undefined} />
                 ))}

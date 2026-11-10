@@ -14,8 +14,10 @@
     "@fontsource/cormorant-garamond": "^5.2.0",
     "@supabase/supabase-js": "~2.118.0",
     "abcjs": "~6.6.2",
+    "jspdf": "~4.2.1",
     "react": "~19.2.9",
-    "react-dom": "~19.2.9"
+    "react-dom": "~19.2.9",
+    "svg2pdf.js": "~2.9.0"
   },
   "devDependencies": {
     "@types/react": "^19.2.0",

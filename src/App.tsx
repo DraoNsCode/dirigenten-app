@@ -29,6 +29,8 @@ import Uebungen from './ansichten/Uebungen'
 import UebungSeite from './ansichten/UebungSeite'
 import ErklaerungSeite from './ansichten/ErklaerungSeite'
 import { SammlungProvider } from './uebungen/sammlung'
+import { AuswahlProvider } from './uebungen/auswahl'
+import Auswahl from './ansichten/Auswahl'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
@@ -61,7 +63,9 @@ export default function App() {
     <MeldungProvider>
       <DatenProvider>
         <SammlungProvider>
-          <Hauptansicht email={sitzung.user.email ?? ''} />
+          <AuswahlProvider>
+            <Hauptansicht email={sitzung.user.email ?? ''} />
+          </AuswahlProvider>
         </SammlungProvider>
       </DatenProvider>
     </MeldungProvider>
@@ -145,6 +149,8 @@ function Hauptansicht({ email }: { email: string }) {
         return <UebungSeite key={a.id} id={a.id} />
       case 'erklaerung':
         return <ErklaerungSeite key={a.id} id={a.id} />
+      case 'auswahl':
+        return <Auswahl />
     }
   }
 

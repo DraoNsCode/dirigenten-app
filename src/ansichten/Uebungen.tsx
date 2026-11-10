@@ -2,9 +2,10 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { Fehlerkarte, Kopf } from '../bausteine'
 import { normal } from '../daten'
 import { UEBUNGEN_ANFANG, useNav, type UebungenEinstellung } from '../navigation'
-import { Lupe, Rechts, Runter } from '../symbole'
+import { Folien, Haken, Lupe, Rechts, Runter } from '../symbole'
 import { STAND_TEXT, passtSuche, schwierigkeiten, schwierigkeitText, vergleich, type Eintrag } from '../uebungen/anzeige'
 import { useSammlung, type Sammlung } from '../uebungen/sammlung'
+import { useAuswahl } from '../uebungen/auswahl'
 
 // Reiter „Übungen“: alle Einträge der Übungssammlung, nach Gruppe und Bereich geordnet,
 // mit Suche und Filtern (Bereich, Schwierigkeit, Stand, Art).
@@ -72,6 +73,8 @@ export default function Uebungen() {
   const istAnfang = JSON.stringify(e) === JSON.stringify(UEBUNGEN_ANFANG)
   const wurzel = useRef<HTMLDivElement>(null)
   const sammlung = stand.art === 'bereit' ? stand.s : null
+  const auswahl = useAuswahl()
+  const ausgewaehlt = new Set(auswahl.punkte.map((p) => `${p.art}:${p.id}`))
 
   const liste = useMemo(() => (sammlung ? abschnitte(sammlung, e) : []), [sammlung, e])
   const anzahl = liste.reduce((n, a) => n + a.eintraege.length, 0)
@@ -102,6 +105,20 @@ export default function Uebungen() {
   return (
     <div ref={wurzel} className="stapel">
       <Kopf eyebrow="Übungssammlung" titel="Übungen" />
+      {auswahl.punkte.length > 0 && (
+        <ul className="menu">
+          <li>
+            <button className="menubtn" type="button" aria-current={nav.detail?.v === 'auswahl' ? 'true' : undefined} onClick={() => nav.geh({ v: 'auswahl' })}>
+              <Folien />
+              <span className="main">
+                <span className="t">Auswahl für die Probenfolien</span>
+                <span className="d">{auswahl.punkte.length === 1 ? '1 Eintrag' : `${auswahl.punkte.length} Einträge`} · ordnen, Tonart, exportieren</span>
+              </span>
+              <Rechts size={18} />
+            </button>
+          </li>
+        </ul>
+      )}
       <div className="search">
         <Lupe />
         <input
@@ -163,7 +180,13 @@ export default function Uebungen() {
               </h3>
               <ul className="list">
                 {a.eintraege.map((x) => (
-                  <EintragZeile key={`${x.art}:${x.e.id}`} x={x} onOeffne={oeffne} gewaehlt={gewaehlt === `${x.art}:${x.e.id}`} />
+                  <EintragZeile
+                    key={`${x.art}:${x.e.id}`}
+                    x={x}
+                    onOeffne={oeffne}
+                    gewaehlt={gewaehlt === `${x.art}:${x.e.id}`}
+                    inAuswahl={ausgewaehlt.has(`${x.art}:${x.e.id}`)}
+                  />
                 ))}
               </ul>
             </section>
@@ -175,13 +198,20 @@ export default function Uebungen() {
   )
 }
 
-function EintragZeile({ x, onOeffne, gewaehlt }: { x: Eintrag; onOeffne: (x: Eintrag) => void; gewaehlt: boolean }) {
+function EintragZeile({ x, onOeffne, gewaehlt, inAuswahl }: { x: Eintrag; onOeffne: (x: Eintrag) => void; gewaehlt: boolean; inAuswahl: boolean }) {
   const stand = x.e.stand
   return (
     <li>
       <button className="listbtn" type="button" aria-current={gewaehlt ? 'true' : undefined} onClick={() => onOeffne(x)}>
         <span className="main">
-          <span className="title">{x.e.titel}</span>
+          <span className="title">
+            {x.e.titel}
+            {inAuswahl && (
+              <span className="in-auswahl" aria-label="in der Auswahl">
+                <Haken size={14} />
+              </span>
+            )}
+          </span>
           <span className="meta">
             {x.art === 'erklaerung' ? (
               <span className="tag erklaerung">Erklärung</span>

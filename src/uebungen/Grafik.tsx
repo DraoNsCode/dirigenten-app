@@ -7,7 +7,7 @@ import type { Grafik as GrafikAngabe } from './typen'
 // Elemente mit data-ton (Tonname in ABC, bezogen auf C-Dur) und data-ziffer lassen sich antippen und anhören.
 
 /** SVG-Text in ein Element umwandeln; Skripte und Ereignis-Attribute werden entfernt */
-function svgAus(text: string): SVGSVGElement | null {
+export function svgAus(text: string): SVGSVGElement | null {
   const doc = new DOMParser().parseFromString(text, 'image/svg+xml')
   const svg = doc.documentElement
   if (!svg || svg.nodeName.toLowerCase() !== 'svg') return null

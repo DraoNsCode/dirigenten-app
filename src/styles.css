@@ -412,6 +412,24 @@ dl.facts > div.breit { grid-column: 1 / -1; }
 .grafik [data-ton].ton-an circle { stroke: var(--gold); stroke-width: 5px; }
 @media (hover: hover) and (pointer: fine) { .grafik [data-ton]:hover circle { stroke: var(--gold); stroke-width: 4px; } }
 
+/* Auswahl für die Probenfolien */
+.auswahlknopf { display: inline-flex; align-items: center; gap: 6px; align-self: flex-start; }
+.auswahlknopf.drin { background: var(--brand); color: var(--on-brand); }
+.in-auswahl { display: inline-flex; vertical-align: -1px; margin-left: 6px; color: var(--label); }
+.menubtn[aria-current="true"] { background: var(--surface2); box-shadow: inset 3px 0 0 var(--gold); }
+.auswahl-liste { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line-soft); }
+.auswahl-punkt { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--line-soft); }
+.auswahl-punkt .num { width: 24px; padding-top: 2px; }
+.auswahl-punkt .main { gap: 6px; }
+.auswahl-titel { border: 0; background: transparent; padding: 0; text-align: left; font-size: 16px; line-height: 1.25; color: var(--ink); cursor: pointer; }
+.auswahl-titel:disabled { color: var(--muted); cursor: default; }
+.auswahl-knoepfe { display: flex; flex-shrink: 0; }
+.auswahl-knoepfe .xbtn:disabled { opacity: .3; cursor: default; }
+.transponieren.klein .rund { width: 30px; height: 30px; font-size: 17px; }
+.transponieren.klein .tonart { min-width: 76px; }
+
+.export-knopf { display: inline-flex; align-items: center; text-decoration: none; }
+
 /* Ohne Leiste unten sitzt die Rückmeldung tiefer */
 @media (min-width: 600px), (orientation: landscape) and (max-height: 500px) {
   .toast { bottom: calc(20px + env(safe-area-inset-bottom, 0px)); }

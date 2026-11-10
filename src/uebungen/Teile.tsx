@@ -1,7 +1,9 @@
 import type { ReactNode } from 'react'
 import { useDaten } from '../daten'
+import { useMeldung } from '../meldung'
 import { useNav } from '../navigation'
-import { Rechts } from '../symbole'
+import { Haken, Plus, Rechts } from '../symbole'
+import { useAuswahl, type AuswahlPunkt } from './auswahl'
 import { quelleTeilen, STAND_TEXT } from './anzeige'
 import type { Liedstelle, Stand } from './typen'
 
@@ -128,5 +130,26 @@ export function Marken({ titel, werte }: { titel: string; werte?: string[] }) {
         ))}
       </div>
     </div>
+  )
+}
+
+/** Knopf „Zur Auswahl“ / „In der Auswahl“ für die Probenfolien */
+export function AuswahlKnopf({ punkt, text = 'Zur Auswahl' }: { punkt: Pick<AuswahlPunkt, 'art' | 'id' | 'stufe'>; text?: string }) {
+  const auswahl = useAuswahl()
+  const zeige = useMeldung()
+  const drin = auswahl.enthaelt(punkt)
+  return (
+    <button
+      type="button"
+      className={'ghost auswahlknopf' + (drin ? ' drin' : '')}
+      aria-pressed={drin}
+      onClick={() => {
+        const jetzt = auswahl.umschalten(punkt)
+        zeige(jetzt ? `Zur Auswahl hinzugefügt (${auswahl.punkte.length + 1})` : 'Aus der Auswahl genommen')
+      }}
+    >
+      {drin ? <Haken size={16} /> : <Plus size={16} />}
+      {drin ? 'In der Auswahl' : text}
+    </button>
   )
 }

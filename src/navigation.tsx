@@ -14,6 +14,7 @@ export type Ansicht =
   | { v: 'uebungen' }
   | { v: 'uebung'; id: string }
   | { v: 'erklaerung'; id: string }
+  | { v: 'auswahl' }
 
 /** Einstellungen im Reiter Lieder; bleiben erhalten, solange die App offen ist */
 export type LiederEinstellung = {

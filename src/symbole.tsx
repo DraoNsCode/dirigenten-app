@@ -141,3 +141,28 @@ export function Runter({ size = 14 }: Props) {
     </svg>
   )
 }
+
+export function PfeilHoch({ size = 18 }: Props) {
+  return (
+    <svg {...basis(size)} strokeWidth={2}>
+      <path d="M12 19V5M6 11l6-6 6 6" />
+    </svg>
+  )
+}
+
+export function PfeilRunter({ size = 18 }: Props) {
+  return (
+    <svg {...basis(size)} strokeWidth={2}>
+      <path d="M12 5v14M6 13l6 6 6-6" />
+    </svg>
+  )
+}
+
+export function Folien({ size = 22 }: Props) {
+  return (
+    <svg {...basis(size)}>
+      <rect x="3" y="4" width="18" height="12" rx="1.5" />
+      <path d="M12 16v4M8 20h8" />
+    </svg>
+  )
+}

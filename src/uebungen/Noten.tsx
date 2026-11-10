@@ -28,8 +28,9 @@ export function blockArt(b: Notenblock) {
 }
 
 /** ABC so, wie es gezeigt wird: Schrift für Silben, Männerstimmen, Transposition */
-export function abcFuerAnsicht(abcjs: Abcjs, b: Notenblock, schritte: number, stimme: Stimme): string {
-  let abc = b.abc.replace(/^(X:.*)$/m, '$1\n%%vocalfont Barlow 13 bold')
+export function abcFuerAnsicht(abcjs: Abcjs, b: Notenblock, schritte: number, stimme: Stimme, schrift = 'Barlow'): string {
+  // Silben und Ziffern in einer geladenen Schrift setzen, damit abcjs ihre Breite richtig misst
+  let abc = b.abc.replace(/^(X:.*)$/m, `$1\n%%vocalfont ${schrift} 13 bold\n%%annotationfont ${schrift} 12`)
   let verschiebung = schritte
   if (stimme === 'maenner' && blockArt(b).einstimmig) {
     abc = abc.replace(/^K:(.*)$/m, (_, k: string) => (/clef=/.test(k) ? `K:${k}` : `K:${k.trim()} clef=bass`))
@@ -40,7 +41,7 @@ export function abcFuerAnsicht(abcjs: Abcjs, b: Notenblock, schritte: number, st
 }
 
 /** Noten auf ihren Inhalt zuschneiden und mittig zeigen, statt die volle Zeilenbreite zu reservieren */
-function zuschneiden(svg: SVGSVGElement | null) {
+export function zuschneiden(svg: SVGSVGElement | null) {
   if (!svg) return
   try {
     const bb = svg.getBBox()
@@ -61,26 +62,29 @@ function zuschneiden(svg: SVGSVGElement | null) {
 }
 
 /**
- * Zeichnet die Noten in `ziel`, passend zur verfügbaren Breite (Pixel).
- * Die Notenzeile wird so breit gesetzt, dass die Noten etwa 1,1-fach vergrößert erscheinen;
- * abcjs bricht lange Zeilen dafür selbst um.
+ * Zeichnet die Noten in `ziel` mit einer Notenzeile von `breite` Einheiten.
+ * abcjs bricht zu lange Zeilen um; danach werden die Takte gleichmäßig auf die Zeilen verteilt,
+ * damit keine fast leere letzte Zeile entsteht.
  */
-export function zeichnen(abcjs: Abcjs, ziel: HTMLElement, abc: string, verfuegbar: number): TuneObject {
-  const breite = Math.max(280, Math.min(560, Math.round(verfuegbar / 1.1)))
-  const tune = abcjs.renderAbc(ziel, abc, {
-    add_classes: true,
-    staffwidth: breite,
-    wrap: { minSpacing: 1.3, maxSpacing: 2.4, preferredMeasuresPerLine: 4 },
-    minPadding: 8,
-    paddingtop: 0,
-    paddingbottom: 0,
-    paddingleft: 0,
-    paddingright: 0,
-    foregroundColor: 'currentColor',
-  })[0]
+export function zeichnen(abcjs: Abcjs, ziel: HTMLElement, abc: string, breite: number, farbe = 'currentColor'): TuneObject {
+  const grund = { add_classes: true, staffwidth: breite, minPadding: 8, paddingtop: 0, paddingbottom: 0, paddingleft: 0, paddingright: 0, foregroundColor: farbe }
+  let tune = abcjs.renderAbc(ziel, abc, { ...grund, wrap: { minSpacing: 1.4, maxSpacing: 2.4, preferredMeasuresPerLine: 8 } })[0]
+  const zeilen = (tune.lines ?? []).filter((l) => l.staff)
+  let takte = 0
+  for (const z of zeilen) for (const x of z.staff?.[0]?.voices?.[0] ?? []) if ((x as { el_type?: string }).el_type === 'bar') takte++
+  if (zeilen.length > 1 && takte > zeilen.length) {
+    const proZeile = Math.ceil(takte / zeilen.length)
+    const umbrueche: number[] = []
+    for (let i = proZeile - 1; i < takte - 1; i += proZeile) umbrueche.push(i)
+    // abcjs erwartet je Notenabschnitt eine Liste der letzten Takte einer Zeile; die Typen sagen fälschlich number[]
+    tune = abcjs.renderAbc(ziel, abc, { ...grund, lineBreaks: [umbrueche] as unknown as number[] })[0]
+  }
   zuschneiden(ziel.querySelector('svg'))
   return tune
 }
+
+/** Notenzeile für die App: etwa 1,1-fach vergrößert in der verfügbaren Breite (Pixel) */
+export const zeilenbreite = (verfuegbar: number) => Math.max(280, Math.min(560, Math.round(verfuegbar / 1.1)))
 
 /** Breite eines Elements, gerundet auf 20 px, damit nicht bei jeder Kleinigkeit neu gezeichnet wird */
 function useBreite(ref: RefObject<HTMLElement | null>): number {
@@ -163,7 +167,7 @@ export default function Noten({ block, ueberschrift }: { block: Notenblock; uebe
         if (!aktiv || !ziel.current) return
         stoppenWenn(spielId.current)
         try {
-          const tune = zeichnen(abcjs, ziel.current, abcFuerAnsicht(abcjs, block, schritte, stimme), breite)
+          const tune = zeichnen(abcjs, ziel.current, abcFuerAnsicht(abcjs, block, schritte, stimme), zeilenbreite(breite))
           abspiel.current = { tune, abcjs }
           setFehler(false)
         } catch {
