@@ -4,7 +4,7 @@ import Grafik from '../uebungen/Grafik'
 import Noten from '../uebungen/Noten'
 import { schwierigkeitText } from '../uebungen/anzeige'
 import { useSammlung } from '../uebungen/sammlung'
-import { Abschnitt, AuswahlKnopf, Liederbuch, Marken, Quellen, StandMarke, Verweise } from '../uebungen/Teile'
+import { Abschnitt, AuswahlKnopf, AuswahlLeiste, Liederbuch, Marken, Quellen, StandMarke, Verweise } from '../uebungen/Teile'
 import { ZURUECK_TEXT } from './UebungSeite'
 
 // Seite einer Erklärung: Kern, kurzer Text, Grafik, Noten und die Übungen, die auf sie verweisen.
@@ -90,6 +90,7 @@ export default function ErklaerungSeite({ id }: { id: string }) {
           Kennung {e.id} · Fassung {e.fassung}
         </p>
       </section>
+      <AuswahlLeiste />
     </>
   )
 }

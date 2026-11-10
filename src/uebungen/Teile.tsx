@@ -1,8 +1,8 @@
 import type { ReactNode } from 'react'
 import { useDaten } from '../daten'
 import { useMeldung } from '../meldung'
-import { useNav } from '../navigation'
-import { Haken, Plus, Rechts } from '../symbole'
+import { useBereich, useNav } from '../navigation'
+import { Folien, Haken, Plus, Rechts } from '../symbole'
 import { useAuswahl, type AuswahlPunkt } from './auswahl'
 import { quelleTeilen, STAND_TEXT } from './anzeige'
 import type { Liedstelle, Stand } from './typen'
@@ -151,5 +151,26 @@ export function AuswahlKnopf({ punkt, text = 'Zur Auswahl' }: { punkt: Pick<Ausw
       {drin ? <Haken size={16} /> : <Plus size={16} />}
       {drin ? 'In der Auswahl' : text}
     </button>
+  )
+}
+
+/**
+ * Leiste unten in den Übungs-Ansichten, solange etwas ausgewählt ist: führt zur Auswahl (ordnen, Tonart, PDF).
+ * Im breiten Modus nur links in der Liste, damit sie nicht doppelt erscheint.
+ */
+export function AuswahlLeiste() {
+  const auswahl = useAuswahl()
+  const nav = useNav()
+  const bereich = useBereich()
+  const n = auswahl.punkte.length
+  if (!n || bereich === 'detail') return null
+  return (
+    <div className="auswahl-leiste">
+      <button type="button" className="primary links" aria-current={nav.detail?.v === 'auswahl' ? 'true' : undefined} onClick={() => nav.geh({ v: 'auswahl' })}>
+        <Folien />
+        <span>Auswahl ({n}): Folien erstellen</span>
+        <Rechts size={18} />
+      </button>
+    </div>
   )
 }

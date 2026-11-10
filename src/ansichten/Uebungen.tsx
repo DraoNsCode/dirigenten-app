@@ -2,7 +2,8 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { Fehlerkarte, Kopf } from '../bausteine'
 import { normal } from '../daten'
 import { UEBUNGEN_ANFANG, useNav, type UebungenEinstellung } from '../navigation'
-import { Folien, Haken, Lupe, Rechts, Runter } from '../symbole'
+import { Haken, Lupe, Rechts, Runter } from '../symbole'
+import { AuswahlLeiste } from '../uebungen/Teile'
 import { STAND_TEXT, passtSuche, schwierigkeiten, schwierigkeitText, vergleich, type Eintrag } from '../uebungen/anzeige'
 import { useSammlung, type Sammlung } from '../uebungen/sammlung'
 import { useAuswahl } from '../uebungen/auswahl'
@@ -105,20 +106,6 @@ export default function Uebungen() {
   return (
     <div ref={wurzel} className="stapel">
       <Kopf eyebrow="Übungssammlung" titel="Übungen" />
-      {auswahl.punkte.length > 0 && (
-        <ul className="menu">
-          <li>
-            <button className="menubtn" type="button" aria-current={nav.detail?.v === 'auswahl' ? 'true' : undefined} onClick={() => nav.geh({ v: 'auswahl' })}>
-              <Folien />
-              <span className="main">
-                <span className="t">Auswahl für die Probenfolien</span>
-                <span className="d">{auswahl.punkte.length === 1 ? '1 Eintrag' : `${auswahl.punkte.length} Einträge`} · ordnen, Tonart, exportieren</span>
-              </span>
-              <Rechts size={18} />
-            </button>
-          </li>
-        </ul>
-      )}
       <div className="search">
         <Lupe />
         <input
@@ -194,6 +181,7 @@ export default function Uebungen() {
           {liste.length === 0 && <p className="empty liste-leer">Keine Einträge für diese Auswahl.</p>}
         </>
       )}
+      <AuswahlLeiste />
     </div>
   )
 }

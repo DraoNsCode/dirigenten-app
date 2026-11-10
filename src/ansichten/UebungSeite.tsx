@@ -4,7 +4,7 @@ import Grafik from '../uebungen/Grafik'
 import Noten from '../uebungen/Noten'
 import { PRUEFBAR_TEXT, RAHMEN_TEXT, SCHWIERIGKEIT_TEXT, schwierigkeitText } from '../uebungen/anzeige'
 import { useSammlung } from '../uebungen/sammlung'
-import { Abschnitt, AuswahlKnopf, Liederbuch, Liste, Marken, Quellen, StandMarke, Verweise } from '../uebungen/Teile'
+import { Abschnitt, AuswahlKnopf, AuswahlLeiste, Liederbuch, Liste, Marken, Quellen, StandMarke, Verweise } from '../uebungen/Teile'
 
 // Seite einer Übung: zunächst alle Angaben aus der Sammlung, damit Daniel die Einträge durchsehen kann.
 // Welche Angaben die App später zeigt, wird danach ausgewählt.
@@ -178,6 +178,7 @@ export default function UebungSeite({ id }: { id: string }) {
           Kennung {u.id} · Fassung {u.fassung}
         </p>
       </section>
+      <AuswahlLeiste />
     </>
   )
 }

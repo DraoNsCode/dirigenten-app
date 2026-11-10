@@ -144,6 +144,20 @@ function Export({ s, punkte }: { s: Sammlung; punkte: AuswahlPunkt[] }) {
 
   const teilenMoeglich =
     stand.art === 'fertig' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [stand.datei] })
+  // Handy: Teilen ist der zuverlässige Weg. In einer App auf dem Home-Bildschirm (iPhone) öffnen
+  // Links auf die erzeugte Datei oft nichts; dort gibt es nur Teilen/Sichern.
+  const handy = window.matchMedia('(pointer: coarse)').matches
+  const homeBildschirm =
+    window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
+  const nurTeilen = teilenMoeglich && handy && homeBildschirm
+
+  function teilen() {
+    if (stand.art !== 'fertig') return
+    navigator.share({ files: [stand.datei], title: stand.datei.name }).catch((err: unknown) => {
+      // Abbrechen durch den Nutzer ist kein Fehler
+      if (err instanceof Error && err.name !== 'AbortError') setStand({ art: 'fehler', text: `Teilen nicht möglich (${err.message})` })
+    })
+  }
 
   return (
     <section className="card export">
@@ -162,22 +176,28 @@ function Export({ s, punkte }: { s: Sammlung; punkte: AuswahlPunkt[] }) {
       {stand.art === 'fertig' && (
         <>
           <p className="note">{stand.datei.name} ist fertig.</p>
+          {teilenMoeglich && handy && (
+            <button className="primary" type="button" onClick={teilen}>
+              <Uebernehmen />
+              PDF teilen oder sichern
+            </button>
+          )}
           <div className="btnrow">
-            <a className="ghost export-knopf" href={stand.url} target="_blank" rel="noreferrer">
-              Öffnen
-            </a>
-            {teilenMoeglich && (
-              <button
-                className="ghost"
-                type="button"
-                onClick={() => navigator.share({ files: [stand.datei], title: stand.datei.name }).catch(() => {})}
-              >
-                Teilen / Sichern
+            {!nurTeilen && (
+              <a className="ghost export-knopf" href={stand.url} target="_blank" rel="noreferrer">
+                Öffnen
+              </a>
+            )}
+            {!nurTeilen && (
+              <a className="ghost export-knopf" href={stand.url} download={stand.datei.name}>
+                Herunterladen
+              </a>
+            )}
+            {teilenMoeglich && !handy && (
+              <button className="ghost" type="button" onClick={teilen}>
+                Teilen
               </button>
             )}
-            <a className="ghost export-knopf" href={stand.url} download={stand.datei.name}>
-              Herunterladen
-            </a>
             <button className="ghost plain" type="button" onClick={erzeugen}>
               Neu erstellen
             </button>
