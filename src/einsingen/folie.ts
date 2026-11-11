@@ -9,6 +9,8 @@ import type { EinsingUebung } from './typen'
 
 export type Folie = {
   titel: string
+  /** Phase des Eintrags (für eine Dachzeile über dem Titel) */
+  phase: string
   inhalt:
     | { art: 'noten'; abc: string }
     | { art: 'text'; text: string }
@@ -24,13 +26,14 @@ function stichpunkt(u: EinsingUebung): string {
 }
 
 export function folieVon(e: Eintrag): Folie {
-  if (e.art === 'gruppe') return { titel: e.folientitel || e.name, inhalt: { art: 'liste', punkte: e.teile.map(stichpunkt) } }
+  const phase = e.phase
+  if (e.art === 'gruppe') return { titel: e.folientitel || e.name, phase, inhalt: { art: 'liste', punkte: e.teile.map(stichpunkt) } }
   const u = e.u
   const titel = u.folientitel || u.name
-  if (u.noten) return { titel, inhalt: { art: 'noten', abc: u.noten.replace(/^Q:.*\n?/m, '') } }
-  if (Array.isArray(u.folientext)) return { titel, inhalt: { art: 'liste', punkte: u.folientext } }
-  if (u.folientext) return { titel, inhalt: { art: 'text', text: u.folientext } }
-  return { titel, inhalt: { art: 'leer' } }
+  if (u.noten) return { titel, phase, inhalt: { art: 'noten', abc: u.noten.replace(/^Q:.*\n?/m, '') } }
+  if (Array.isArray(u.folientext)) return { titel, phase, inhalt: { art: 'liste', punkte: u.folientext } }
+  if (u.folientext) return { titel, phase, inhalt: { art: 'text', text: u.folientext } }
+  return { titel, phase, inhalt: { art: 'leer' } }
 }
 
 const gleich = (a: Folie, b: Folie) => JSON.stringify(a) === JSON.stringify(b)
