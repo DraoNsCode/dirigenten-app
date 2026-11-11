@@ -158,6 +158,16 @@ export function PfeilRunter({ size = 18 }: Props) {
   )
 }
 
+/** Einsingen: Stimme mit Schallbögen */
+export function Einsingen({ size = 22 }: Props) {
+  return (
+    <svg {...basis(size)}>
+      <path d="M4 9.5v5h3.5L12 18.5v-13L7.5 9.5z" />
+      <path d="M15.5 9a4 4 0 0 1 0 6M18.5 6.5a7.5 7.5 0 0 1 0 11" />
+    </svg>
+  )
+}
+
 export function Folien({ size = 22 }: Props) {
   return (
     <svg {...basis(size)}>

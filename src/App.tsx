@@ -31,11 +31,15 @@ import ErklaerungSeite from './ansichten/ErklaerungSeite'
 import { SammlungProvider } from './uebungen/sammlung'
 import { AuswahlProvider } from './uebungen/auswahl'
 import Auswahl from './ansichten/Auswahl'
+import Einsingen from './ansichten/Einsingen'
+import EinsingenUebung from './ansichten/EinsingenUebung'
+import { EinsingenProvider } from './einsingen/daten'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
   lieder: { v: 'lieder' },
   uebungen: { v: 'uebungen' },
+  einsingen: { v: 'einsingen' },
   menue: { v: 'menue' },
 }
 
@@ -64,7 +68,9 @@ export default function App() {
       <DatenProvider>
         <SammlungProvider>
           <AuswahlProvider>
-            <Hauptansicht email={sitzung.user.email ?? ''} />
+            <EinsingenProvider>
+              <Hauptansicht email={sitzung.user.email ?? ''} />
+            </EinsingenProvider>
           </AuswahlProvider>
         </SammlungProvider>
       </DatenProvider>
@@ -151,6 +157,10 @@ function Hauptansicht({ email }: { email: string }) {
         return <ErklaerungSeite key={a.id} id={a.id} />
       case 'auswahl':
         return <Auswahl />
+      case 'einsingen':
+        return <Einsingen />
+      case 'einsingen-uebung':
+        return <EinsingenUebung key={a.id} id={a.id} />
     }
   }
 
@@ -190,6 +200,7 @@ function LeererBereich({ reiter }: { reiter: Reiter }) {
     woche: 'Bei einem Termin „Lied eintragen“ oder „Lied vormerken“ wählen oder ein Lied antippen – es erscheint hier.',
     lieder: 'Ein Lied auswählen, um Angaben, Noten und Hinweise zu sehen.',
     uebungen: 'Eine Übung oder Erklärung auswählen, um sie hier zu lesen.',
+    einsingen: 'Eine Übung antippen, um sie hier zu lesen.',
     menue: 'Gottesdienste, Proben oder „Lied hinzufügen“ wählen.',
   }
   return (

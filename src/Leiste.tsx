@@ -1,11 +1,12 @@
-import { Kalender, MenueSymbol, Noten, Stimmgabel } from './symbole'
+import { Einsingen, Kalender, MenueSymbol, Noten, Stimmgabel } from './symbole'
 
-export type Reiter = 'woche' | 'lieder' | 'uebungen' | 'menue'
+export type Reiter = 'woche' | 'lieder' | 'uebungen' | 'einsingen' | 'menue'
 
 const REITER: { id: Reiter; text: string; Symbol: typeof Kalender }[] = [
   { id: 'woche', text: 'Wochenplan', Symbol: Kalender },
   { id: 'lieder', text: 'Lieder', Symbol: Noten },
   { id: 'uebungen', text: 'Übungen', Symbol: Stimmgabel },
+  { id: 'einsingen', text: 'Einsingen', Symbol: Einsingen },
   { id: 'menue', text: 'Menü', Symbol: MenueSymbol },
 ]
 
