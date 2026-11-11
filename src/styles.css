@@ -498,3 +498,6 @@ body:has(.auswahl-leiste) .toast { bottom: calc(164px + env(safe-area-inset-bott
   display: block; width: 100%; max-width: calc((100dvh - 90px) * 16 / 9); height: auto; flex-shrink: 0;
   border-radius: 4px; box-shadow: 0 4px 18px rgba(0, 0, 0, .35); scroll-snap-align: center; background: #fbfaf6;
 }
+
+/* Knopf mit Symbol: Symbol und Schrift auf einer Höhe */
+.ghost.mit-symbol { display: inline-flex; align-items: center; justify-content: center; gap: 8px; height: 44px; padding: 0 16px; font-size: 15px; }
