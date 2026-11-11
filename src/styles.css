@@ -459,3 +459,15 @@ body:has(.auswahl-leiste) .toast { bottom: calc(164px + env(safe-area-inset-bott
 @media (prefers-reduced-motion: reduce) { .ein-phasenkopf svg { transition: none; } }
 .meta.ein-ziel { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ein-lage { margin: 0; font-size: 14px; color: var(--muted); }
+.ein-zeile { display: flex; align-items: center; gap: 8px; }
+.ein-zeile .listbtn { flex: 1; min-width: 0; width: auto; margin-right: 0; }
+.ein-wahl {
+  flex-shrink: 0; width: 40px; height: 40px; border-radius: 20px; border: 1px solid var(--line); background: var(--card);
+  color: var(--brand); display: inline-flex; align-items: center; justify-content: center; cursor: pointer; padding: 0;
+}
+.ein-wahl.drin { border-color: var(--brand); background: var(--brand); color: var(--on-brand); }
+@media (hover: hover) and (pointer: fine) { .ein-wahl:not(.drin):hover { border-color: var(--brand); } }
+/* Übungsseite: Auswahlknopf bleibt rechts neben dem Titel, auch wenn dieser umbricht */
+.head:has(.ein-wahl) .headrow { flex-wrap: nowrap; align-items: flex-start; }
+.head:has(.ein-wahl) .headrow h1 { flex: 1; min-width: 0; }
+.head:has(.ein-wahl) .headrow .ein-wahl { margin-top: 2px; }

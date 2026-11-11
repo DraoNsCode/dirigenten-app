@@ -34,6 +34,8 @@ import Auswahl from './ansichten/Auswahl'
 import Einsingen from './ansichten/Einsingen'
 import EinsingenUebung from './ansichten/EinsingenUebung'
 import { EinsingenProvider } from './einsingen/daten'
+import { EinsingAuswahlProvider } from './einsingen/auswahl'
+import EinsingenAuswahl from './ansichten/EinsingenAuswahl'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
@@ -69,7 +71,9 @@ export default function App() {
         <SammlungProvider>
           <AuswahlProvider>
             <EinsingenProvider>
-              <Hauptansicht email={sitzung.user.email ?? ''} />
+              <EinsingAuswahlProvider>
+                <Hauptansicht email={sitzung.user.email ?? ''} />
+              </EinsingAuswahlProvider>
             </EinsingenProvider>
           </AuswahlProvider>
         </SammlungProvider>
@@ -161,6 +165,8 @@ function Hauptansicht({ email }: { email: string }) {
         return <Einsingen />
       case 'einsingen-uebung':
         return <EinsingenUebung key={a.id} id={a.id} />
+      case 'einsingen-auswahl':
+        return <EinsingenAuswahl />
     }
   }
 

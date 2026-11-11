@@ -1,12 +1,14 @@
 import { useLayoutEffect, useRef, useState } from 'react'
 import { Fehlerkarte, Kopf } from '../bausteine'
 import { useNav } from '../navigation'
-import { Rechts, Runter } from '../symbole'
+import { Runter } from '../symbole'
 import { useEinsingen, type Phase } from '../einsingen/daten'
 import type { EinsingUebung } from '../einsingen/typen'
+import { useEinsingAuswahl } from '../einsingen/auswahl'
+import { EinsingLeiste, WahlKnopf } from '../einsingen/Teile'
 
 // Reiter „Einsingen“: die Übungen nach Phasen, jede Phase auf- und zuklappbar.
-// Unter dem Namen steht das Ziel, auf eine Zeile gekürzt. Keine Suche, keine Filter.
+// Unter dem Namen steht das Ziel, auf eine Zeile gekürzt; rechts der Knopf zum Auswählen. Keine Suche, keine Filter.
 
 /** Welche Phasen zugeklappt sind, merkt sich das Gerät */
 const ZU_SCHLUESSEL = 'dirigenten-einsingen-zu'
@@ -81,6 +83,7 @@ export default function Einsingen() {
       {d?.phasen.map((p) => (
         <PhaseAbschnitt key={p.name} p={p} offen={!zu.has(p.name)} onUmklappen={() => umklappen(p.name)} gewaehlt={gewaehlt} onOeffne={oeffne} />
       ))}
+      <EinsingLeiste />
     </div>
   )
 }
@@ -99,24 +102,29 @@ function PhaseAbschnitt({
   onOeffne: (u: EinsingUebung) => void
 }) {
   const n = p.uebungen.length
+  const auswahl = useEinsingAuswahl()
+  const gewaehltN = p.uebungen.filter((u) => auswahl.enthaelt(u.id)).length
   return (
     <section className="section ein-phase">
       <button type="button" className="ein-phasenkopf" aria-expanded={offen} onClick={onUmklappen}>
         <span className="ein-phasenname">{p.name}</span>
-        <span className="ein-phasenzahl">{n === 1 ? '1 Übung' : `${n} Übungen`}</span>
+        <span className="ein-phasenzahl">
+          {n === 1 ? '1 Übung' : `${n} Übungen`}
+          {!offen && gewaehltN > 0 && ` · ${gewaehltN} ausgewählt`}
+        </span>
         <Runter size={16} />
       </button>
       {offen && (
         <ul className="list">
           {p.uebungen.map((u) => (
-            <li key={u.id}>
+            <li key={u.id} className="ein-zeile">
               <button className="listbtn" type="button" aria-current={gewaehlt === u.id ? 'true' : undefined} onClick={() => onOeffne(u)}>
                 <span className="main">
                   <span className="title">{u.name}</span>
                   <span className="meta ein-ziel">{u.ziel}</span>
                 </span>
-                <Rechts size={18} />
               </button>
+              <WahlKnopf id={u.id} name={u.name} />
             </li>
           ))}
         </ul>

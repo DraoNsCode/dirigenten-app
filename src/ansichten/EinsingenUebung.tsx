@@ -3,6 +3,7 @@ import { useNav } from '../navigation'
 import { Abschnitt } from '../uebungen/Teile'
 import NotenAnsicht from '../einsingen/NotenAnsicht'
 import { useEinsingen } from '../einsingen/daten'
+import { EinsingLeiste, WahlKnopf } from '../einsingen/Teile'
 
 // Seite einer Übung fürs Einsingen, in der Lesereihenfolge des Dirigenten:
 // Titel, Noten mit Lageangabe, Ziel; Ablauf und Achten ergänzen nur, was dort noch nicht steht.
@@ -21,7 +22,7 @@ function Text({ text }: { text: string }) {
 export default function EinsingenUebung({ id }: { id: string }) {
   const nav = useNav()
   const { stand } = useEinsingen()
-  const zurueck = nav.vorher?.v === 'einsingen' ? 'Einsingen' : 'Zurück'
+  const zurueck = nav.vorher?.v === 'einsingen' ? 'Einsingen' : nav.vorher?.v === 'einsingen-auswahl' ? 'Auswahl' : 'Zurück'
   const u = stand.art === 'bereit' ? stand.d.uebungen.get(id) : undefined
 
   if (!u) {
@@ -38,7 +39,7 @@ export default function EinsingenUebung({ id }: { id: string }) {
   return (
     <>
       <Zurueck text={zurueck} />
-      <Kopf eyebrow={u.phase} titel={u.name} klein />
+      <Kopf eyebrow={u.phase} titel={u.name} klein rechts={<WahlKnopf id={u.id} name={u.name} />} />
       {u.noten && <NotenAnsicht abc={u.noten} hinweis={u.notenHinweis} lage={u.lage} />}
       <p className="ue-ziel">{u.ziel}</p>
       <Abschnitt titel="Ablauf">
@@ -49,6 +50,7 @@ export default function EinsingenUebung({ id }: { id: string }) {
           <Text text={u.achten} />
         </Abschnitt>
       )}
+      <EinsingLeiste />
     </>
   )
 }
