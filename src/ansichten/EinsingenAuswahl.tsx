@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { Kopf, Zurueck } from '../bausteine'
 import { useNav } from '../navigation'
-import { Kreuz, PfeilHoch, PfeilRunter, Uebernehmen } from '../symbole'
+import { Folien, Kreuz, PfeilHoch, PfeilRunter, Uebernehmen } from '../symbole'
 import { useEinsingen, type Eintrag } from '../einsingen/daten'
 import { useEinsingAuswahl } from '../einsingen/auswahl'
 import { folienDateiname, gleicheFolieWieDavor } from '../einsingen/folie'
+import FolienAnsicht from '../einsingen/FolienAnsicht'
 
 // Auswahl fürs Einsingen: oben der Export als PDF, darunter die Reihenfolge der Folien.
 
@@ -82,6 +83,8 @@ type ExportStand =
 /** PDF erzeugen; danach öffnen, teilen (Handy) oder herunterladen. Teilen braucht ein eigenes Antippen. */
 function Export({ eintraege }: { eintraege: Eintrag[] }) {
   const [stand, setStand] = useState<ExportStand>({ art: 'bereit' })
+  const [ansehen, setAnsehen] = useState(false)
+  const schliessen = useCallback(() => setAnsehen(false), [])
   const url = stand.art === 'fertig' ? stand.url : null
   const kennung = eintraege.map((e) => e.id).join(',')
 
@@ -103,8 +106,8 @@ function Export({ eintraege }: { eintraege: Eintrag[] }) {
 
   const teilenMoeglich =
     stand.art === 'fertig' && typeof navigator.canShare === 'function' && navigator.canShare({ files: [stand.datei] })
-  // Handy: Teilen ist der zuverlässige Weg. In einer App auf dem Home-Bildschirm (iPhone) öffnen
-  // Links auf die erzeugte Datei oft nichts; dort gibt es nur Teilen/Sichern.
+  // Handy: „Öffnen“ zeigt die Folien in der App (FolienAnsicht), weil Web-Apps auf dem Home-Bildschirm (iPhone)
+  // Links auf die erzeugte Datei oft nicht öffnen; daneben Teilen/Sichern. PC: Öffnen im Browser, Herunterladen, Teilen.
   const handy = window.matchMedia('(pointer: coarse)').matches
   const homeBildschirm =
     window.matchMedia('(display-mode: standalone)').matches || (navigator as Navigator & { standalone?: boolean }).standalone === true
@@ -134,14 +137,20 @@ function Export({ eintraege }: { eintraege: Eintrag[] }) {
       {stand.art === 'fertig' && (
         <>
           <p className="note">{stand.datei.name} ist fertig.</p>
+          {handy && (
+            <button className="primary" type="button" onClick={() => setAnsehen(true)}>
+              <Folien />
+              Öffnen
+            </button>
+          )}
           {teilenMoeglich && handy && (
-            <button className="primary" type="button" onClick={teilen}>
+            <button className="ghost" type="button" onClick={teilen}>
               <Uebernehmen />
               PDF teilen oder sichern
             </button>
           )}
           <div className="btnrow">
-            {!nurTeilen && (
+            {!handy && (
               <a className="ghost export-knopf" href={stand.url} target="_blank" rel="noreferrer">
                 Öffnen
               </a>
@@ -162,6 +171,7 @@ function Export({ eintraege }: { eintraege: Eintrag[] }) {
           </div>
         </>
       )}
+      {stand.art === 'fertig' && ansehen && <FolienAnsicht datei={stand.datei} titel={stand.datei.name.replace(/\.pdf$/, '')} onSchliessen={schliessen} />}
       {stand.art === 'fehler' && (
         <>
           <p className="fehler">Das PDF konnte nicht erstellt werden: {stand.text}</p>

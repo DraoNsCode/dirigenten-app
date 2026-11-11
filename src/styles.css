@@ -475,3 +475,26 @@ body:has(.auswahl-leiste) .toast { bottom: calc(164px + env(safe-area-inset-bott
 .ein-teil { display: flex; flex-direction: column; gap: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 .ein-teil:first-of-type { border-top: 0; padding-top: 0; }
 .ein-teilname { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.15; color: var(--ink); }
+
+/* Folienansicht (Handy): das exportierte PDF in der App, eine Folie unter der anderen */
+.folien-ansicht {
+  position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column;
+  background: #0e1a35; color: #f7f2e7;
+  padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px) env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+}
+.folien-kopf { flex-shrink: 0; display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; }
+.folien-titel { display: flex; flex-direction: column; gap: 2px; min-width: 0; font-family: var(--font-label); font-weight: 600; font-size: 15px; letter-spacing: .06em; }
+.folien-zahl { font-family: var(--font-body); font-weight: 400; font-size: 13px; letter-spacing: 0; color: #c3cadb; }
+.folien-schliessen {
+  flex-shrink: 0; display: inline-flex; align-items: center; gap: 6px; height: 40px; padding: 0 14px; border-radius: 20px;
+  border: 1px solid rgba(247, 242, 231, .35); background: transparent; color: #f7f2e7; font-weight: 600; font-size: 15px; cursor: pointer;
+}
+.folien-hinweis { margin: 0; padding: 0 16px; font-size: 15px; color: #c3cadb; }
+.folien-seiten {
+  flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; scroll-snap-type: y proximity;
+  display: flex; flex-direction: column; align-items: center; gap: 14px; padding: 6px 12px 24px;
+}
+.folie-seite {
+  display: block; width: 100%; max-width: calc((100dvh - 90px) * 16 / 9); height: auto; flex-shrink: 0;
+  border-radius: 4px; box-shadow: 0 4px 18px rgba(0, 0, 0, .35); scroll-snap-align: center; background: #fbfaf6;
+}
