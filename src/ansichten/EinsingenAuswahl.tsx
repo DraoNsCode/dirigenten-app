@@ -144,7 +144,7 @@ function Export({ eintraege }: { eintraege: Eintrag[] }) {
             </button>
           )}
           {teilenMoeglich && handy && (
-            <button className="ghost mit-symbol" type="button" onClick={teilen}>
+            <button className="primary zweit" type="button" onClick={teilen}>
               <Uebernehmen />
               PDF teilen oder sichern
             </button>
