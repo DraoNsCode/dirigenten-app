@@ -471,3 +471,7 @@ body:has(.auswahl-leiste) .toast { bottom: calc(164px + env(safe-area-inset-bott
 .head:has(.ein-wahl) .headrow { flex-wrap: nowrap; align-items: flex-start; }
 .head:has(.ein-wahl) .headrow h1 { flex: 1; min-width: 0; }
 .head:has(.ein-wahl) .headrow .ein-wahl { margin-top: 2px; }
+/* Gruppe kurzer Übungen: Teile nacheinander, jeder mit eigener Überschrift */
+.ein-teil { display: flex; flex-direction: column; gap: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
+.ein-teil:first-of-type { border-top: 0; padding-top: 0; }
+.ein-teilname { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.15; color: var(--ink); }

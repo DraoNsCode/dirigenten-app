@@ -2,23 +2,15 @@ import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { TuneObject } from 'abcjs'
 import { istRhythmus, schlag } from '../uebungen/abc'
 import { spielen, stoppen, stoppenWenn, type Ereignis } from '../uebungen/klang'
-import { ladeAbcjs, zeichnen, zeilenbreite } from '../uebungen/Noten'
+import { ladeAbcjs, zeilenbreite } from '../uebungen/Noten'
+import { notenZeichnen, type Abcjs } from './zeichnen'
 
 // Noten einer Übung fürs Einsingen: darüber ein Hinweis (falls vorhanden), darunter die Lageangabe,
 // dann „Ausgangston“ und „Anhören“ (mit mitlaufender Markierung). Kein Metronom, kein Transponieren.
 // Das Abspieltempo steht als Q:-Zeile in den ABC-Noten und wird nicht angezeigt.
 
-type Abcjs = Awaited<ReturnType<typeof ladeAbcjs>>
-
 /** Ohne Q:-Zeile wird mit diesem Tempo abgespielt (Schläge pro Minute) */
 const GRUNDTEMPO = 72
-
-/** ABC so, wie es gezeigt wird: Schrift für Silben und Ziffern, ohne Tempoangabe */
-export function abcZumZeigen(abc: string, schrift = 'Barlow'): string {
-  return abc
-    .replace(/^Q:.*\n?/m, '')
-    .replace(/^(X:.*)$/m, `$1\n%%vocalfont ${schrift} 13 bold\n%%annotationfont ${schrift} 12`)
-}
 
 /** Abspieltempo in Schlägen pro Minute aus der Q:-Zeile (z. B. „Q:1/4=80“) */
 export function abspielTempo(abc: string): number {
@@ -97,7 +89,7 @@ export default function NotenAnsicht({ abc, hinweis, lage }: { abc: string; hinw
         if (!aktiv || !ziel.current) return
         stoppenWenn(spielId.current)
         try {
-          const tune = zeichnen(abcjs, ziel.current, abcZumZeigen(abc), zeilenbreite(breite))
+          const tune = notenZeichnen(abcjs, ziel.current, abc, zeilenbreite(breite))
           gezeichnet.current = { abcjs, tune }
           setFehler(false)
         } catch {

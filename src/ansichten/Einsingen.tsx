@@ -2,13 +2,13 @@ import { useLayoutEffect, useRef, useState } from 'react'
 import { Fehlerkarte, Kopf } from '../bausteine'
 import { useNav } from '../navigation'
 import { Runter } from '../symbole'
-import { useEinsingen, type Phase } from '../einsingen/daten'
-import type { EinsingUebung } from '../einsingen/typen'
+import { uebungenVon, useEinsingen, type Eintrag, type Phase } from '../einsingen/daten'
 import { useEinsingAuswahl } from '../einsingen/auswahl'
 import { EinsingLeiste, WahlKnopf } from '../einsingen/Teile'
 
 // Reiter „Einsingen“: die Übungen nach Phasen, jede Phase auf- und zuklappbar.
-// Unter dem Namen steht das Ziel, auf eine Zeile gekürzt; rechts der Knopf zum Auswählen. Keine Suche, keine Filter.
+// Unter dem Namen steht das Ziel (bei einer Gruppe die Namen ihrer Übungen), auf eine Zeile gekürzt;
+// rechts der Knopf zum Auswählen. Keine Suche, keine Filter.
 
 /** Welche Phasen zugeklappt sind, merkt sich das Gerät */
 const ZU_SCHLUESSEL = 'dirigenten-einsingen-zu'
@@ -55,12 +55,12 @@ export default function Einsingen() {
     merkeZu(neu)
   }
 
-  function oeffne(u: EinsingUebung) {
+  function oeffne(e: Eintrag) {
     if (nav.layout !== 'breit') gemerkteScrollposition = wurzel.current?.closest('.view')?.scrollTop ?? null
-    nav.geh({ v: 'einsingen-uebung', id: u.id })
+    nav.geh(e.art === 'gruppe' ? { v: 'einsingen-gruppe', id: e.id } : { v: 'einsingen-uebung', id: e.id })
   }
 
-  const gewaehlt = nav.detail?.v === 'einsingen-uebung' ? nav.detail.id : ''
+  const gewaehlt = nav.detail?.v === 'einsingen-uebung' || nav.detail?.v === 'einsingen-gruppe' ? nav.detail.id : ''
 
   return (
     <div ref={wurzel} className="stapel">
@@ -99,11 +99,12 @@ function PhaseAbschnitt({
   offen: boolean
   onUmklappen: () => void
   gewaehlt: string
-  onOeffne: (u: EinsingUebung) => void
+  onOeffne: (e: Eintrag) => void
 }) {
-  const n = p.uebungen.length
+  // Gezählt werden Übungen; eine ausgewählte Gruppe zählt mit allen ihren Übungen
+  const n = p.eintraege.reduce((s, e) => s + uebungenVon(e).length, 0)
   const auswahl = useEinsingAuswahl()
-  const gewaehltN = p.uebungen.filter((u) => auswahl.enthaelt(u.id)).length
+  const gewaehltN = p.eintraege.filter((e) => auswahl.enthaelt(e.id)).reduce((s, e) => s + uebungenVon(e).length, 0)
   return (
     <section className="section ein-phase">
       <button type="button" className="ein-phasenkopf" aria-expanded={offen} onClick={onUmklappen}>
@@ -116,15 +117,15 @@ function PhaseAbschnitt({
       </button>
       {offen && (
         <ul className="list">
-          {p.uebungen.map((u) => (
-            <li key={u.id} className="ein-zeile">
-              <button className="listbtn" type="button" aria-current={gewaehlt === u.id ? 'true' : undefined} onClick={() => onOeffne(u)}>
+          {p.eintraege.map((e) => (
+            <li key={e.id} className="ein-zeile">
+              <button className="listbtn" type="button" aria-current={gewaehlt === e.id ? 'true' : undefined} onClick={() => onOeffne(e)}>
                 <span className="main">
-                  <span className="title">{u.name}</span>
-                  <span className="meta ein-ziel">{u.ziel}</span>
+                  <span className="title">{e.name}</span>
+                  <span className="meta ein-ziel">{e.art === 'gruppe' ? e.teile.map((u) => u.name).join(' · ') : e.u.ziel}</span>
                 </span>
               </button>
-              <WahlKnopf id={u.id} name={u.name} />
+              <WahlKnopf id={e.id} name={e.name} />
             </li>
           ))}
         </ul>

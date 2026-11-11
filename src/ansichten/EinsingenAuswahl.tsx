@@ -2,16 +2,11 @@ import { useEffect, useState } from 'react'
 import { Kopf, Zurueck } from '../bausteine'
 import { useNav } from '../navigation'
 import { Kreuz, PfeilHoch, PfeilRunter, Uebernehmen } from '../symbole'
-import { useEinsingen } from '../einsingen/daten'
+import { useEinsingen, type Eintrag } from '../einsingen/daten'
 import { useEinsingAuswahl } from '../einsingen/auswahl'
-import { gleicheFolieWieDavor } from '../einsingen/folie'
-import type { Variante } from '../einsingen/folien'
-import type { EinsingUebung } from '../einsingen/typen'
+import { folienDateiname, gleicheFolieWieDavor } from '../einsingen/folie'
 
 // Auswahl fürs Einsingen: oben der Export als PDF, darunter die Reihenfolge der Folien.
-// Bis Daniel zwischen Variante A und B entschieden hat, enthält das PDF jede Folie in beiden Varianten.
-
-const VARIANTEN: Variante[] = ['A', 'B']
 
 export default function EinsingenAuswahl() {
   const nav = useNav()
@@ -19,9 +14,9 @@ export default function EinsingenAuswahl() {
   const auswahl = useEinsingAuswahl()
   const d = stand.art === 'bereit' ? stand.d : null
   const n = auswahl.ids.length
-  const uebungen = auswahl.ids.map((id) => d?.uebungen.get(id))
-  const gleich = gleicheFolieWieDavor(uebungen)
-  const vorhanden = uebungen.filter((u): u is EinsingUebung => !!u)
+  const eintraege = auswahl.ids.map((id) => d?.eintraege.get(id))
+  const gleich = gleicheFolieWieDavor(eintraege)
+  const vorhanden = eintraege.filter((e): e is Eintrag => !!e)
 
   return (
     <>
@@ -34,16 +29,16 @@ export default function EinsingenAuswahl() {
 
       {d && n > 0 && (
         <>
-          <Export uebungen={vorhanden} />
+          <Export eintraege={vorhanden} />
 
           <ol className="auswahl-liste">
             {auswahl.ids.map((id, i) => {
-              const u = uebungen[i]
+              const u = eintraege[i]
               return (
                 <li key={id} className="auswahl-punkt">
                   <span className="num">{i + 1}</span>
                   <div className="main">
-                    <button type="button" className="auswahl-titel" disabled={!u} onClick={() => nav.geh({ v: 'einsingen-uebung', id })}>
+                    <button type="button" className="auswahl-titel" disabled={!u} onClick={() => nav.geh(u?.art === 'gruppe' ? { v: 'einsingen-gruppe', id } : { v: 'einsingen-uebung', id })}>
                       {u?.name ?? `${id} (nicht mehr vorhanden)`}
                     </button>
                     {u && (
@@ -84,17 +79,11 @@ type ExportStand =
   | { art: 'fertig'; url: string; datei: File }
   | { art: 'fehler'; text: string }
 
-function dateiname() {
-  const d = new Date()
-  const z = (n: number) => String(n).padStart(2, '0')
-  return `Einsingen ${d.getFullYear()}-${z(d.getMonth() + 1)}-${z(d.getDate())}.pdf`
-}
-
 /** PDF erzeugen; danach öffnen, teilen (Handy) oder herunterladen. Teilen braucht ein eigenes Antippen. */
-function Export({ uebungen }: { uebungen: EinsingUebung[] }) {
+function Export({ eintraege }: { eintraege: Eintrag[] }) {
   const [stand, setStand] = useState<ExportStand>({ art: 'bereit' })
   const url = stand.art === 'fertig' ? stand.url : null
-  const kennung = uebungen.map((u) => u.id).join(',')
+  const kennung = eintraege.map((e) => e.id).join(',')
 
   // Ändert sich die Auswahl, gilt das fertige PDF nicht mehr
   useEffect(() => setStand((st) => (st.art === 'fertig' ? { art: 'bereit' } : st)), [kennung])
@@ -104,8 +93,8 @@ function Export({ uebungen }: { uebungen: EinsingUebung[] }) {
     setStand({ art: 'laeuft', n: 0, m: 0 })
     try {
       const { einsingFolien } = await import('../einsingen/folien')
-      const blob = await einsingFolien(uebungen, VARIANTEN, (n, m) => setStand({ art: 'laeuft', n, m }))
-      const datei = new File([blob], dateiname(), { type: 'application/pdf' })
+      const blob = await einsingFolien(eintraege, (n, m) => setStand({ art: 'laeuft', n, m }))
+      const datei = new File([blob], folienDateiname(), { type: 'application/pdf' })
       setStand({ art: 'fertig', url: URL.createObjectURL(blob), datei })
     } catch (err) {
       setStand({ art: 'fehler', text: err instanceof Error ? err.message : String(err) })
@@ -131,7 +120,6 @@ function Export({ uebungen }: { uebungen: EinsingUebung[] }) {
   return (
     <section className="card export">
       <h2>Probenfolien</h2>
-      {VARIANTEN.length > 1 && <p className="note">Probe: jede Folie zweimal, in Variante A und B.</p>}
       {stand.art === 'bereit' && (
         <button className="primary" type="button" onClick={erzeugen}>
           <Uebernehmen />

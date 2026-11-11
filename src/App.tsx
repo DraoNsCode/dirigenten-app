@@ -36,6 +36,7 @@ import EinsingenUebung from './ansichten/EinsingenUebung'
 import { EinsingenProvider } from './einsingen/daten'
 import { EinsingAuswahlProvider } from './einsingen/auswahl'
 import EinsingenAuswahl from './ansichten/EinsingenAuswahl'
+import EinsingenGruppe from './ansichten/EinsingenGruppe'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
@@ -167,6 +168,8 @@ function Hauptansicht({ email }: { email: string }) {
         return <EinsingenUebung key={a.id} id={a.id} />
       case 'einsingen-auswahl':
         return <EinsingenAuswahl />
+      case 'einsingen-gruppe':
+        return <EinsingenGruppe key={a.id} id={a.id} />
     }
   }
 

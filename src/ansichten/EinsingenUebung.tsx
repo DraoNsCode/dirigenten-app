@@ -1,12 +1,20 @@
 import { Kopf, Zurueck } from '../bausteine'
-import { useNav } from '../navigation'
+import { useNav, type Ansicht } from '../navigation'
 import { Abschnitt } from '../uebungen/Teile'
 import NotenAnsicht from '../einsingen/NotenAnsicht'
 import { useEinsingen } from '../einsingen/daten'
 import { EinsingLeiste, WahlKnopf } from '../einsingen/Teile'
+import type { EinsingUebung } from '../einsingen/typen'
 
 // Seite einer Übung fürs Einsingen, in der Lesereihenfolge des Dirigenten:
 // Titel, Noten mit Lageangabe, Ziel; Ablauf und Achten ergänzen nur, was dort noch nicht steht.
+
+/** Beschriftung von „Zurück“ je nach der Ansicht, von der aus geöffnet wurde */
+export function zurueckText(vorher: Ansicht | undefined): string {
+  if (vorher?.v === 'einsingen') return 'Einsingen'
+  if (vorher?.v === 'einsingen-auswahl') return 'Auswahl'
+  return 'Zurück'
+}
 
 /** Text mit Leerzeilen als Absätze */
 function Text({ text }: { text: string }) {
@@ -19,10 +27,28 @@ function Text({ text }: { text: string }) {
   )
 }
 
+/** Noten, Ziel, Ablauf und Achten einer Übung (auch als Teil einer Gruppe) */
+export function UebungInhalt({ u }: { u: EinsingUebung }) {
+  return (
+    <>
+      {u.noten && <NotenAnsicht abc={u.noten} hinweis={u.notenHinweis} lage={u.lage} />}
+      <p className="ue-ziel">{u.ziel}</p>
+      <Abschnitt titel="Ablauf">
+        <Text text={u.ablauf} />
+      </Abschnitt>
+      {u.achten && (
+        <Abschnitt titel="Achten">
+          <Text text={u.achten} />
+        </Abschnitt>
+      )}
+    </>
+  )
+}
+
 export default function EinsingenUebung({ id }: { id: string }) {
   const nav = useNav()
   const { stand } = useEinsingen()
-  const zurueck = nav.vorher?.v === 'einsingen' ? 'Einsingen' : nav.vorher?.v === 'einsingen-auswahl' ? 'Auswahl' : 'Zurück'
+  const zurueck = zurueckText(nav.vorher)
   const u = stand.art === 'bereit' ? stand.d.uebungen.get(id) : undefined
 
   if (!u) {
@@ -40,16 +66,7 @@ export default function EinsingenUebung({ id }: { id: string }) {
     <>
       <Zurueck text={zurueck} />
       <Kopf eyebrow={u.phase} titel={u.name} klein rechts={<WahlKnopf id={u.id} name={u.name} />} />
-      {u.noten && <NotenAnsicht abc={u.noten} hinweis={u.notenHinweis} lage={u.lage} />}
-      <p className="ue-ziel">{u.ziel}</p>
-      <Abschnitt titel="Ablauf">
-        <Text text={u.ablauf} />
-      </Abschnitt>
-      {u.achten && (
-        <Abschnitt titel="Achten">
-          <Text text={u.achten} />
-        </Abschnitt>
-      )}
+      <UebungInhalt u={u} />
       <EinsingLeiste />
     </>
   )

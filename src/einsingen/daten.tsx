@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { supabase } from '../supabase'
-import { FORMAT, type EinsingDatei, type EinsingUebung } from './typen'
+import { FORMATE, type EinsingDatei, type EinsingUebung, type EintragDatei } from './typen'
 
 // Übungen fürs Einsingen: Der GitHub-Ablauf im privaten Repo dirigenten-app-uebungen lädt bei jeder Änderung
 // dirigenten-uebungen.json in den privaten Supabase-Speicher „uebungen“ (nur angemeldete Konten).
@@ -11,8 +11,16 @@ const DATEI = 'dirigenten-uebungen.json'
 /** Nach so langer Abwesenheit wird beim Zurückkehren in die App neu geladen */
 const NEU_NACH_MS = 10 * 60_000
 
-export type Phase = { name: string; uebungen: EinsingUebung[] }
-export type Einsingen = { phasen: Phase[]; uebungen: Map<string, EinsingUebung> }
+/** Eintrag der Liste mit seinen Übungen: eine einzelne Übung oder eine Gruppe kurzer Übungen */
+export type Eintrag =
+  | { art: 'uebung'; id: string; name: string; phase: string; u: EinsingUebung }
+  | { art: 'gruppe'; id: string; name: string; phase: string; folientitel: string; teile: EinsingUebung[] }
+
+export type Phase = { name: string; eintraege: Eintrag[] }
+export type Einsingen = { phasen: Phase[]; uebungen: Map<string, EinsingUebung>; eintraege: Map<string, Eintrag> }
+
+/** Die Übungen eines Eintrags */
+export const uebungenVon = (e: Eintrag): EinsingUebung[] => (e.art === 'uebung' ? [e.u] : e.teile)
 
 export type EinsingStand =
   | { art: 'leer' }
@@ -25,8 +33,21 @@ type Kontext = { stand: EinsingStand; anfordern: () => void; neuLaden: () => voi
 export const EinsingenKontext = createContext<Kontext | null>(null)
 
 export function aufbereiten(datei: EinsingDatei): Einsingen {
-  const phasen: Phase[] = datei.phasen.map((name) => ({ name, uebungen: datei.uebungen.filter((u) => u.phase === name) }))
-  return { phasen, uebungen: new Map(datei.uebungen.map((u) => [u.id, u])) }
+  const uebungen = new Map(datei.uebungen.map((u) => [u.id, u]))
+  // Format 1 kennt keine Einträge: jede Übung ist einer
+  const roh: EintragDatei[] = datei.eintraege ?? datei.uebungen.map((u) => ({ phase: u.phase, art: 'uebung', id: u.id }))
+  const liste: Eintrag[] = []
+  for (const e of roh) {
+    if (e.art === 'uebung') {
+      const u = uebungen.get(e.id)
+      if (u) liste.push({ art: 'uebung', id: u.id, name: u.name, phase: e.phase, u })
+    } else {
+      const teile = e.teile.map((id) => uebungen.get(id)).filter((u): u is EinsingUebung => !!u)
+      if (teile.length) liste.push({ art: 'gruppe', id: e.id, name: e.name, phase: e.phase, folientitel: e.folientitel, teile })
+    }
+  }
+  const phasen: Phase[] = datei.phasen.map((name) => ({ name, eintraege: liste.filter((e) => e.phase === name) }))
+  return { phasen, uebungen, eintraege: new Map(liste.map((e) => [e.id, e])) }
 }
 
 function fehlerText(err: unknown): { text: string; fehlt?: boolean } {
@@ -47,8 +68,8 @@ export function EinsingenProvider({ children }: { children: ReactNode }) {
       const { data, error } = await supabase.storage.from(SPEICHER).download(DATEI)
       if (error) throw error
       const datei = JSON.parse(await data.text()) as EinsingDatei
-      if (datei.format !== FORMAT) {
-        throw new Error(`Die Übungen haben das Format ${datei.format}, die App kennt ${FORMAT}. Die App muss angepasst werden.`)
+      if (!FORMATE.includes(datei.format)) {
+        throw new Error(`Die Übungen haben das Format ${datei.format}, die App kennt ${FORMATE.join(' und ')}. Die App muss angepasst werden.`)
       }
       setStand({ art: 'bereit', d: aufbereiten(datei) })
       geladenUm.current = Date.now()

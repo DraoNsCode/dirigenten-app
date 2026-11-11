@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import { EinsingenKontext } from './daten'
 
-// Auswahl fürs Einsingen: welche Übungen in welcher Reihenfolge als Folien exportiert werden.
+// Auswahl fürs Einsingen: welche Einträge (Übungen oder Gruppen) in welcher Reihenfolge als Folien exportiert werden.
 // Sie ist kein Probenplan und liegt nur auf diesem Gerät, bis sie geleert wird; getrennt von der Auswahl im Reiter „Übungen“.
 // Neu Ausgewähltes kommt an seinen Platz in der Reihenfolge der Liste (Phase, dann reihenfolge.md);
 // mit den Pfeilen lässt sich die Reihenfolge danach ändern.
@@ -34,8 +34,8 @@ export function EinsingAuswahlProvider({ children }: { children: ReactNode }) {
   const einsingen = useContext(EinsingenKontext)
   const d = einsingen?.stand.art === 'bereit' ? einsingen.stand.d : null
 
-  // Platz jeder Übung in der Liste (Phase, dann reihenfolge.md)
-  const rang = useMemo(() => new Map((d?.phasen ?? []).flatMap((p) => p.uebungen).map((u, i) => [u.id, i])), [d])
+  // Platz jedes Eintrags in der Liste (Phase, dann reihenfolge.md)
+  const rang = useMemo(() => new Map((d?.phasen ?? []).flatMap((p) => p.eintraege).map((e, i) => [e.id, i])), [d])
 
   useEffect(() => {
     try {
