@@ -37,12 +37,17 @@ import { EinsingenProvider } from './einsingen/daten'
 import { EinsingAuswahlProvider } from './einsingen/auswahl'
 import EinsingenAuswahl from './ansichten/EinsingenAuswahl'
 import EinsingenGruppe from './ansichten/EinsingenGruppe'
+import Themen from './ansichten/Themen'
+import ThemaSeite from './ansichten/ThemaSeite'
+import FamilieSeite from './ansichten/FamilieSeite'
+import { InhaltProvider } from './themen/daten'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
   lieder: { v: 'lieder' },
   uebungen: { v: 'uebungen' },
   einsingen: { v: 'einsingen' },
+  themen: { v: 'themen' },
   menue: { v: 'menue' },
 }
 
@@ -73,7 +78,9 @@ export default function App() {
           <AuswahlProvider>
             <EinsingenProvider>
               <EinsingAuswahlProvider>
-                <Hauptansicht email={sitzung.user.email ?? ''} />
+                <InhaltProvider>
+                  <Hauptansicht email={sitzung.user.email ?? ''} />
+                </InhaltProvider>
               </EinsingAuswahlProvider>
             </EinsingenProvider>
           </AuswahlProvider>
@@ -170,6 +177,12 @@ function Hauptansicht({ email }: { email: string }) {
         return <EinsingenAuswahl />
       case 'einsingen-gruppe':
         return <EinsingenGruppe key={a.id} id={a.id} />
+      case 'themen':
+        return <Themen />
+      case 'thema':
+        return <ThemaSeite key={a.id} id={a.id} />
+      case 'familie':
+        return <FamilieSeite key={a.id} id={a.id} />
     }
   }
 
@@ -210,6 +223,7 @@ function LeererBereich({ reiter }: { reiter: Reiter }) {
     lieder: 'Ein Lied auswählen, um Angaben, Noten und Hinweise zu sehen.',
     uebungen: 'Eine Übung oder Erklärung auswählen, um sie hier zu lesen.',
     einsingen: 'Eine Übung antippen, um sie hier zu lesen.',
+    themen: 'Ein Thema oder eine Familie antippen, um sie hier zu lesen.',
     menue: 'Gottesdienste, Proben oder „Lied hinzufügen“ wählen.',
   }
   return (

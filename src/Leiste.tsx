@@ -1,12 +1,14 @@
-import { Einsingen, Kalender, MenueSymbol, Noten, Stimmgabel } from './symbole'
+import { Buch, Einsingen, Kalender, MenueSymbol, Noten, Stimmgabel } from './symbole'
 
-export type Reiter = 'woche' | 'lieder' | 'uebungen' | 'einsingen' | 'menue'
+export type Reiter = 'woche' | 'lieder' | 'uebungen' | 'einsingen' | 'themen' | 'menue'
 
 const REITER: { id: Reiter; text: string; Symbol: typeof Kalender }[] = [
   { id: 'woche', text: 'Wochenplan', Symbol: Kalender },
   { id: 'lieder', text: 'Lieder', Symbol: Noten },
   { id: 'uebungen', text: 'Übungen', Symbol: Stimmgabel },
   { id: 'einsingen', text: 'Einsingen', Symbol: Einsingen },
+  // Neuer Aufbau der Übungsfunktion (seit 14.11.2026), vorübergehend als eigener Reiter
+  { id: 'themen', text: 'Themen', Symbol: Buch },
   { id: 'menue', text: 'Menü', Symbol: MenueSymbol },
 ]
 

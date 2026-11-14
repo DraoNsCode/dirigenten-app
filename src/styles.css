@@ -476,6 +476,62 @@ body:has(.auswahl-leiste) .toast { bottom: calc(164px + env(safe-area-inset-bott
 .ein-teil:first-of-type { border-top: 0; padding-top: 0; }
 .ein-teilname { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.15; color: var(--ink); }
 
+/* ---------- Reiter Themen (neuer Aufbau: Themenseiten und Familien) ---------- */
+/* Sechs Reiter: die Beschriftung darf in der Leiste unten nicht umbrechen */
+.tabs:not(.seite) .tab span { white-space: nowrap; }
+@media (max-width: 400px) { .tabs:not(.seite) .tab span { font-size: 10.5px; letter-spacing: .04em; } }
+.th-themazeile { padding-top: 4px; }
+.th-themaname { font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.15; color: var(--ink); }
+/* Im Chor erkennen: die Beobachtung, darunter die Familie zum Antippen */
+.th-erkennen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+.th-erkennen li { display: flex; flex-direction: column; gap: 2px; padding-left: 12px; border-left: 2px solid var(--line); }
+.th-zeichen { font-size: 16px; line-height: 1.4; color: var(--ink); }
+.th-verweis {
+  align-self: flex-start; display: inline-flex; align-items: center; gap: 4px; min-height: 32px; padding: 0; border: 0; background: transparent;
+  font: inherit; font-size: 15px; font-weight: 600; color: var(--link); cursor: pointer;
+}
+.th-verweis svg { flex-shrink: 0; color: var(--label); }
+/* Eingeklappte Abschnitte */
+.th-klappen { display: flex; flex-direction: column; border-top: 1px solid var(--line-soft); }
+.th-klappe { border-bottom: 1px solid var(--line-soft); }
+.th-klappenkopf {
+  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 46px; padding: 0; border: 0; background: transparent;
+  cursor: pointer; text-align: left; color: var(--ink);
+}
+.th-klappentitel { flex: 1; min-width: 0; font-size: 16px; font-weight: 600; }
+.th-klappenkopf svg, .th-stufenkopf svg { flex-shrink: 0; color: var(--muted); transition: transform .15s; }
+.th-klappenkopf[aria-expanded="false"] svg, .th-stufenkopf[aria-expanded="false"] svg { transform: rotate(-90deg); }
+@media (prefers-reduced-motion: reduce) { .th-klappenkopf svg, .th-stufenkopf svg { transition: none; } }
+.th-klappeninhalt { padding: 0 0 14px; }
+/* Ansage: wörtlich gesprochen, deshalb abgesetzt */
+.th-ansage { display: flex; flex-direction: column; gap: 4px; padding: 10px 14px; border-left: 3px solid var(--gold); background: var(--surface2); border-radius: 0 8px 8px 0; }
+.th-ansage p { margin: 0; font-size: 16px; line-height: 1.5; color: var(--ink); }
+.th-marke, .th-paar dt { font-family: var(--font-label); font-weight: 600; font-size: 12px; letter-spacing: .14em; text-transform: uppercase; color: var(--label); }
+/* Typischer Fehler: Fehler und Korrektur als Paar */
+.th-paar { margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.th-paar > div { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 10px; align-items: baseline; }
+.th-paar dd { margin: 0; font-size: 16px; line-height: 1.45; color: var(--ink); }
+.th-folie { margin: 0; font-size: 14px; color: var(--muted); }
+/* Stufen */
+.th-stufen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
+.th-stufe { border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+.th-stufenkopf {
+  display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 12px; border: 0; background: transparent;
+  text-align: left; color: var(--ink); font: inherit;
+}
+button.th-stufenkopf { cursor: pointer; }
+.th-stufenkopf svg { margin-top: 4px; }
+.th-stufennr {
+  flex-shrink: 0; width: 24px; height: 24px; border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;
+  background: var(--surface2); color: var(--label); font-size: 13px; font-weight: 600;
+}
+.th-stufentext { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.th-stufenname { font-size: 16px; font-weight: 600; line-height: 1.3; }
+.th-aenderung { font-size: 15px; line-height: 1.4; color: var(--body); }
+.th-stufeninhalt { display: flex; flex-direction: column; gap: 12px; padding: 2px 12px 12px; }
+/* Noten einer Stufe ohne eigenen Rahmen, damit sie in der Karte die volle Breite haben */
+.th-stufeninhalt .notenblock { border: 0; border-radius: 0; padding: 0; background: transparent; }
+
 /* Folienansicht (Handy): das exportierte PDF in der App, eine Folie unter der anderen */
 .folien-ansicht {
   position: fixed; inset: 0; z-index: 50; display: flex; flex-direction: column;
