@@ -1,14 +1,15 @@
-import { Buch, Einsingen, Kalender, MenueSymbol, Noten, Stimmgabel } from './symbole'
+import { Buch, Kalender, MenueSymbol, Noten, Stimmgabel } from './symbole'
 
-export type Reiter = 'woche' | 'lieder' | 'uebungen' | 'einsingen' | 'themen' | 'menue'
+// 'sammlung' ist die bisherige Übungssammlung: kein eigener Reiter in der Leiste, erreichbar über das Menü (übergangsweise)
+export type Reiter = 'woche' | 'lieder' | 'uebungen' | 'einsingen' | 'menue' | 'sammlung'
 
+// Übungen und Einsingen sind die zwei Zugänge zu denselben Übungen (Daniel, 15.11.2026):
+// „Übungen“ zum Lesen und Vorbereiten über Themen, „Einsingen“ zum schnellen Auswählen für die Probe.
 const REITER: { id: Reiter; text: string; Symbol: typeof Kalender }[] = [
   { id: 'woche', text: 'Wochenplan', Symbol: Kalender },
   { id: 'lieder', text: 'Lieder', Symbol: Noten },
-  { id: 'uebungen', text: 'Übungen', Symbol: Stimmgabel },
-  { id: 'einsingen', text: 'Einsingen', Symbol: Einsingen },
-  // Neuer Aufbau der Übungsfunktion (seit 14.11.2026), vorübergehend als eigener Reiter
-  { id: 'themen', text: 'Themen', Symbol: Buch },
+  { id: 'uebungen', text: 'Übungen', Symbol: Buch },
+  { id: 'einsingen', text: 'Einsingen', Symbol: Stimmgabel },
   { id: 'menue', text: 'Menü', Symbol: MenueSymbol },
 ]
 
@@ -28,7 +29,7 @@ export default function Leiste({
           key={id}
           type="button"
           className="tab"
-          aria-current={aktiv === id ? 'page' : undefined}
+          aria-current={aktiv === id || (aktiv === 'sammlung' && id === 'menue') ? 'page' : undefined}
           onClick={() => onWechsel(id)}
         >
           <Symbol />

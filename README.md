@@ -12,8 +12,8 @@ Web-App für die Dirigenten des Gemeindechors: Probenplanung, gesungene Lieder i
 | App (dieser Code) | GitHub Pages | Oberfläche; wird bei jeder Änderung auf `main` automatisch gebaut und veröffentlicht (`.github/workflows/veroeffentlichen.yml`) |
 | Daten | Supabase (Projekt `ogajbvuvehudedkdhadx`, Frankfurt) | Lieder, Kategorien, Einträge, Hinweise; Zugriff nur für angemeldete Konten |
 | Noten | Supabase Storage, privater Speicher `noten` | eine PDF pro Lied |
-| Übungen | Supabase Storage, privater Speicher `uebungen` | `uebungen.json` und `grafiken.json` aus dem privaten Repo `chor-uebungen`; dessen Ablauf „In die Dirigenten-App laden“ baut und lädt sie bei jeder Änderung auf `main` hoch. Die App liest nur. |
-| Einsingen und Themen | Supabase Storage, privater Speicher `uebungen` | `dirigenten-uebungen.json` (Reiter „Einsingen“) und `dirigenten-inhalt.json` (Reiter „Themen“, neuer Aufbau mit Themenseiten und Familien) aus dem privaten Repo `dirigenten-app-uebungen`. Die App liest nur. |
+| Übungen und Einsingen | Supabase Storage, privater Speicher `uebungen` | `dirigenten-inhalt.json` (Themenseiten und Familien von Übungen) aus dem privaten Repo `dirigenten-app-uebungen`; dessen Ablauf „In die Dirigenten-App laden“ baut und lädt sie bei jeder Änderung auf `main` hoch. Der Reiter „Übungen“ zeigt sie zum Lesen und Vorbereiten, der Reiter „Einsingen“ zum Auswählen und als Probenfolien (PDF). Die App liest nur. |
+| Bisherige Übungssammlung | Supabase Storage, privater Speicher `uebungen` | `uebungen.json` und `grafiken.json` aus dem privaten Repo `chor-uebungen`. Übergangsweise über das Menü erreichbar. |
 
 Im Code stehen nur die Projektadresse und der **öffentliche** Schlüssel von Supabase. Der geheime Schlüssel gehört nie in dieses Repo.
 

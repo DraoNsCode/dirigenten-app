@@ -5,7 +5,7 @@ import { spielen, stoppen, stoppenWenn, type Ereignis } from '../uebungen/klang'
 import { ladeAbcjs, zeilenbreite } from '../uebungen/Noten'
 import { KURZ_APP, notenZeichnen, type Abcjs } from './zeichnen'
 
-// Noten einer Übung fürs Einsingen: darüber ein Hinweis (falls vorhanden), darunter die Lageangabe,
+// Noten einer Grundübung oder Stufe: darüber ein Hinweis (falls vorhanden), darunter die Lageangabe,
 // dann „Ausgangston“ und „Anhören“ (mit mitlaufender Markierung). Kein Metronom, kein Transponieren.
 // Das Abspieltempo steht als Q:-Zeile in den ABC-Noten und wird nicht angezeigt.
 

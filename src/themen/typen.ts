@@ -1,4 +1,4 @@
-// Aufbau von dirigenten-inhalt.json aus dem privaten Repo dirigenten-app-uebungen (neuer Aufbau seit 14.11.2026):
+// Aufbau von dirigenten-inhalt.json aus dem privaten Repo dirigenten-app-uebungen:
 // Themenseiten zum Vorbereiten und Familien von Übungen (eine Grundübung, darunter Stufen).
 // build_inhalt.py prüft die Dateien und schreibt die Datei; die App liest sie nur.
 

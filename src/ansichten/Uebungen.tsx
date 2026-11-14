@@ -2,13 +2,13 @@ import { useLayoutEffect, useMemo, useRef } from 'react'
 import { Fehlerkarte, Kopf } from '../bausteine'
 import { normal } from '../daten'
 import { UEBUNGEN_ANFANG, useNav, type UebungenEinstellung } from '../navigation'
-import { Haken, Lupe, Rechts, Runter } from '../symbole'
+import { Haken, Links, Lupe, Rechts, Runter } from '../symbole'
 import { AuswahlLeiste } from '../uebungen/Teile'
 import { STAND_TEXT, passtSuche, schwierigkeiten, schwierigkeitText, vergleich, type Eintrag } from '../uebungen/anzeige'
 import { useSammlung, type Sammlung } from '../uebungen/sammlung'
 import { useAuswahl } from '../uebungen/auswahl'
 
-// Reiter „Übungen“: alle Einträge der Übungssammlung, nach Gruppe und Bereich geordnet,
+// Bisherige Übungssammlung (übergangsweise über das Menü erreichbar, kein eigener Reiter mehr): alle Einträge, nach Gruppe und Bereich geordnet,
 // mit Suche und Filtern (Bereich, Schwierigkeit, Stand, Art).
 
 const SCHWIERIGKEIT: [UebungenEinstellung['schwierigkeit'], string][] = [
@@ -105,7 +105,11 @@ export default function Uebungen() {
 
   return (
     <div ref={wurzel} className="stapel">
-      <Kopf eyebrow="Übungssammlung" titel="Übungen" />
+      <button className="back" type="button" onClick={() => nav.reiter('menue')}>
+        <Links size={20} />
+        Menü
+      </button>
+      <Kopf eyebrow="Übergangsweise" titel="Bisherige Übungssammlung" klein />
       <div className="search">
         <Lupe />
         <input

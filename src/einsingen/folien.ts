@@ -7,10 +7,9 @@ import cormorant600 from './schriften/cormorant-garamond-600.ttf?url'
 import barlowSchmal600 from './schriften/barlow-condensed-600.ttf?url'
 import { ladeAbcjs } from '../uebungen/Noten'
 import { KURZ_APP, notenZeichnen, type Abcjs } from './zeichnen'
-import { folienFolge, type Folie } from './folie'
-import type { Eintrag } from './daten'
+import type { Folie } from './folie'
 
-// Folien fürs Einsingen als PDF (16:9). Eine Folie je Eintrag: oben links der Folientitel, darüber die Dachzeile
+// Folien fürs Einsingen als PDF (16:9). Eine Folie je ausgewählter Grundübung oder Stufe: oben links der Folientitel, darüber die Dachzeile
 // mit der Phase, darunter die Noten, eine Textzeile (mittig) oder Stichpunkte (linksbündig am linken Rand);
 // links unten die Fußzeile „EINSINGEN“. Keine weiteren Angaben. Zwei gleiche Folien hintereinander werden eine.
 // System aus der Gemeinde-Vorlage abgeleitet (helles Design, Variante B): Hellgrund, Dunkeltext,
@@ -301,19 +300,10 @@ export type Gestaltung = 'titel-oben' | 'gleich-gross'
 type Variante = { groessen: Groessen; struktur?: Struktur; vermerk?: string; gestaltung?: Gestaltung }
 
 /** Erzeugt die Folien als PDF; `fortschritt` meldet „Folie n von m“ */
-export async function einsingFolien(
-  eintraege: Eintrag[],
-  fortschritt?: (n: number, m: number) => void,
-  /** Nur zum Vergleichen: jede Folie in mehreren Größen, mit Vermerk */
-  varianten: Variante[] = [{ groessen: GROESSEN, struktur: STRUKTUR }],
-): Promise<Blob> {
-  return folienPdf(folienFolge(eintraege), fortschritt, varianten)
-}
-
-/** Erzeugt ein PDF aus fertigen Folien (ohne gleiche Folien hintereinander zusammenzufassen) */
 export async function folienPdf(
   liste: Folie[],
   fortschritt?: (n: number, m: number) => void,
+  /** Nur zum Vergleichen: jede Folie in mehreren Fassungen, mit Vermerk */
   varianten: Variante[] = [{ groessen: GROESSEN, struktur: STRUKTUR }],
 ): Promise<Blob> {
   const [{ jsPDF }, { svg2pdf }, abcjs, schriften] = await Promise.all([import('jspdf'), import('svg2pdf.js'), ladeAbcjs(), ladeSchriften()])

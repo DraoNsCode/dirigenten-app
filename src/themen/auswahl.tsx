@@ -2,10 +2,10 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState, t
 import { InhaltKontext } from './daten'
 import { wahlSchluessel, type Wahl } from './folie'
 
-// Auswahl im neuen Aufbau: welche Grundübungen und Stufen in welcher Reihenfolge als Folien exportiert werden.
+// Auswahl für die Probenfolien: welche Grundübungen und Stufen in welcher Reihenfolge als Folien exportiert werden.
 // Von einer Familie lassen sich mehrere Stufen zugleich auswählen (Daniel, 14.11.2026).
-// Sie ist kein Probenplan und liegt nur auf diesem Gerät, bis sie geleert wird; getrennt von den Auswahlen der Reiter
-// „Übungen“ und „Einsingen“. Neu Ausgewähltes kommt an seinen Platz in der Reihenfolge der Liste
+// Sie ist kein Probenplan und liegt nur auf diesem Gerät, bis sie geleert wird; getrennt von der Auswahl der
+// bisherigen Übungssammlung. Neu Ausgewähltes kommt an seinen Platz in der Reihenfolge der Liste
 // (Phase, Familie, Grundübung vor den Stufen); mit den Pfeilen lässt sich die Reihenfolge danach ändern.
 
 const SPEICHER_SCHLUESSEL = 'dirigenten-themen-auswahl'

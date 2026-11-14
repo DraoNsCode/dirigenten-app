@@ -6,7 +6,7 @@ import { useInhalt } from '../themen/daten'
 import { Absaetze, Klappe, ThemenLeiste } from '../themen/Teile'
 import type { Familie } from '../themen/typen'
 
-// Themenseite (neuer Aufbau): immer sichtbar sind der Kern, „Im Chor erkennen“ und die Familien;
+// Themenseite: immer sichtbar sind der Kern, „Im Chor erkennen“ und die Familien;
 // die weiteren Abschnitte stehen eingeklappt darunter.
 
 export default function ThemaSeite({ id }: { id: string }) {
@@ -18,7 +18,7 @@ export default function ThemaSeite({ id }: { id: string }) {
   if (!d || !t) {
     return (
       <>
-        <Zurueck text="Themen" />
+        <Zurueck text="Übungen" />
         <p className="note">{stand.art === 'bereit' ? 'Thema nicht gefunden.' : stand.art === 'fehler' ? 'Die Themen konnten nicht geladen werden.' : 'Lädt …'}</p>
       </>
     )
@@ -29,7 +29,7 @@ export default function ThemaSeite({ id }: { id: string }) {
 
   return (
     <>
-      <Zurueck text="Themen" />
+      <Zurueck text="Übungen" />
       <Kopf eyebrow="Thema" titel={t.name} klein />
       <p className="ue-ziel">{t.kern}</p>
 

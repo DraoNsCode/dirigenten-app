@@ -31,26 +31,21 @@ import ErklaerungSeite from './ansichten/ErklaerungSeite'
 import { SammlungProvider } from './uebungen/sammlung'
 import { AuswahlProvider } from './uebungen/auswahl'
 import Auswahl from './ansichten/Auswahl'
-import Einsingen from './ansichten/Einsingen'
-import EinsingenUebung from './ansichten/EinsingenUebung'
-import { EinsingenProvider } from './einsingen/daten'
-import { EinsingAuswahlProvider } from './einsingen/auswahl'
-import EinsingenAuswahl from './ansichten/EinsingenAuswahl'
-import EinsingenGruppe from './ansichten/EinsingenGruppe'
-import Themen from './ansichten/Themen'
+import Vorbereiten from './ansichten/Vorbereiten'
+import Probe from './ansichten/Probe'
 import ThemaSeite from './ansichten/ThemaSeite'
 import FamilieSeite from './ansichten/FamilieSeite'
 import { InhaltProvider } from './themen/daten'
 import { ThemenAuswahlProvider } from './themen/auswahl'
-import ThemenAuswahl from './ansichten/ThemenAuswahl'
+import ProbeAuswahl from './ansichten/ProbeAuswahl'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
   lieder: { v: 'lieder' },
-  uebungen: { v: 'uebungen' },
-  einsingen: { v: 'einsingen' },
-  themen: { v: 'themen' },
+  uebungen: { v: 'vorbereiten' },
+  einsingen: { v: 'probe' },
   menue: { v: 'menue' },
+  sammlung: { v: 'uebungen' },
 }
 
 export default function App() {
@@ -78,15 +73,11 @@ export default function App() {
       <DatenProvider>
         <SammlungProvider>
           <AuswahlProvider>
-            <EinsingenProvider>
-              <EinsingAuswahlProvider>
-                <InhaltProvider>
-                  <ThemenAuswahlProvider>
-                    <Hauptansicht email={sitzung.user.email ?? ''} />
-                  </ThemenAuswahlProvider>
-                </InhaltProvider>
-              </EinsingAuswahlProvider>
-            </EinsingenProvider>
+            <InhaltProvider>
+              <ThemenAuswahlProvider>
+                <Hauptansicht email={sitzung.user.email ?? ''} />
+              </ThemenAuswahlProvider>
+            </InhaltProvider>
           </AuswahlProvider>
         </SammlungProvider>
       </DatenProvider>
@@ -173,22 +164,16 @@ function Hauptansicht({ email }: { email: string }) {
         return <ErklaerungSeite key={a.id} id={a.id} />
       case 'auswahl':
         return <Auswahl />
-      case 'einsingen':
-        return <Einsingen />
-      case 'einsingen-uebung':
-        return <EinsingenUebung key={a.id} id={a.id} />
-      case 'einsingen-auswahl':
-        return <EinsingenAuswahl />
-      case 'einsingen-gruppe':
-        return <EinsingenGruppe key={a.id} id={a.id} />
-      case 'themen':
-        return <Themen />
+      case 'vorbereiten':
+        return <Vorbereiten />
+      case 'probe':
+        return <Probe />
       case 'thema':
         return <ThemaSeite key={a.id} id={a.id} />
       case 'familie':
         return <FamilieSeite key={a.id} id={a.id} />
-      case 'themen-auswahl':
-        return <ThemenAuswahl />
+      case 'probe-auswahl':
+        return <ProbeAuswahl />
     }
   }
 
@@ -227,9 +212,9 @@ function LeererBereich({ reiter }: { reiter: Reiter }) {
   const text: Record<Reiter, string> = {
     woche: 'Bei einem Termin „Lied eintragen“ oder „Lied vormerken“ wählen oder ein Lied antippen – es erscheint hier.',
     lieder: 'Ein Lied auswählen, um Angaben, Noten und Hinweise zu sehen.',
-    uebungen: 'Eine Übung oder Erklärung auswählen, um sie hier zu lesen.',
-    einsingen: 'Eine Übung antippen, um sie hier zu lesen.',
-    themen: 'Ein Thema oder eine Familie antippen, um sie hier zu lesen.',
+    uebungen: 'Ein Thema oder eine Familie antippen, um sie hier zu lesen.',
+    einsingen: 'Übungen mit + auswählen; „Lesen“ zeigt eine Familie hier.',
+    sammlung: 'Eine Übung oder Erklärung auswählen, um sie hier zu lesen.',
     menue: 'Gottesdienste, Proben oder „Lied hinzufügen“ wählen.',
   }
   return (

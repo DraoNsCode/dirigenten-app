@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Kopf } from '../bausteine'
 import { useNav } from '../navigation'
 import { supabase } from '../supabase'
-import { Abmelden, Kalender, Noten, Plus, Rechts } from '../symbole'
+import { Abmelden, Datei, Kalender, Noten, Plus, Rechts } from '../symbole'
 
 declare const __STAND__: string
 
@@ -47,6 +47,17 @@ export default function Menue({ email }: { email: string }) {
             <span className="main">
               <span className="t">Lied hinzufügen</span>
               <span className="d">Lied außerhalb des Liederbuchs anlegen, Noten als PDF</span>
+            </span>
+            <Rechts size={18} />
+          </button>
+        </li>
+        <li>
+          {/* Übergangsweise: die frühere Sammlung, bis die Reiter „Übungen“ und „Einsingen“ sie ersetzen */}
+          <button className="menubtn" type="button" onClick={() => nav.reiter('sammlung')}>
+            <Datei />
+            <span className="main">
+              <span className="t">Bisherige Übungssammlung</span>
+              <span className="d">Übergangsweise: die frühere Sammlung mit Übungen und Erklärungen</span>
             </span>
             <Rechts size={18} />
           </button>

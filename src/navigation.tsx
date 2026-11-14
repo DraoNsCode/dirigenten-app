@@ -11,18 +11,17 @@ export type Ansicht =
   | { v: 'liste'; art: 'gd' | 'pr' }
   | { v: 'lied'; id: number }
   | { v: 'neu' }
+  // bisherige Übungssammlung (über das Menü)
   | { v: 'uebungen' }
   | { v: 'uebung'; id: string }
   | { v: 'erklaerung'; id: string }
   | { v: 'auswahl' }
-  | { v: 'einsingen' }
-  | { v: 'einsingen-uebung'; id: string }
-  | { v: 'einsingen-auswahl' }
-  | { v: 'einsingen-gruppe'; id: string }
-  | { v: 'themen' }
+  // Übungen und Einsingen: ein Inhalt, zwei Zugänge
+  | { v: 'vorbereiten' }
+  | { v: 'probe' }
   | { v: 'thema'; id: string }
   | { v: 'familie'; id: string }
-  | { v: 'themen-auswahl' }
+  | { v: 'probe-auswahl' }
 
 /** Einstellungen im Reiter Lieder; bleiben erhalten, solange die App offen ist */
 export type LiederEinstellung = {
@@ -41,7 +40,7 @@ export const LIEDER_ANFANG: LiederEinstellung = {
   sortierung: 'haeufigkeit',
 }
 
-/** Einstellungen im Reiter Übungen; bleiben erhalten, solange die App offen ist */
+/** Einstellungen in der bisherigen Übungssammlung; bleiben erhalten, solange die App offen ist */
 export type UebungenEinstellung = {
   suche: string
   /** Kennung eines Bereichs oder 'alle' */

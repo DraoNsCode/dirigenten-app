@@ -1,7 +1,7 @@
 import type { Folie } from '../einsingen/folie'
 import type { Angaben, Familie } from './typen'
 
-// Was auf der Folie einer Grundübung oder Stufe steht (neuer Aufbau).
+// Was auf der Folie einer Grundübung oder Stufe steht.
 // Titel und Text kommen aus der eigenen Folie der Stufe, sonst aus der Folie der Grundübung.
 // Noten: die eigenen der Stufe; hat sie keine, die der Grundübung – außer die Stufe bringt eine eigene Folie mit Text mit.
 

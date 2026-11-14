@@ -10,7 +10,7 @@ import { Abschnitt, AuswahlKnopf, AuswahlLeiste, Liederbuch, Liste, Marken, Quel
 // Welche Angaben die App später zeigt, wird danach ausgewählt.
 
 export const ZURUECK_TEXT: Partial<Record<Ansicht['v'], string>> = {
-  uebungen: 'Übungen',
+  uebungen: 'Sammlung',
   uebung: 'Übung',
   erklaerung: 'Erklärung',
   lied: 'Lied',

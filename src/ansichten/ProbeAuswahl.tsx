@@ -5,11 +5,12 @@ import Export from '../einsingen/Export'
 import { useInhalt } from '../themen/daten'
 import { useThemenAuswahl } from '../themen/auswahl'
 import { einheitName, folienFolge, folieVon, gleicheFolieWieDavor, wahlAus } from '../themen/folie'
+import { zurueckText } from '../themen/Teile'
 
-// Auswahl im neuen Aufbau: oben der Export als PDF, darunter die Reihenfolge der Folien.
+// Auswahl für die Probenfolien: oben der Export als PDF, darunter die Reihenfolge der Folien.
 // Jeder Punkt ist eine Grundübung oder Stufe einer Familie.
 
-export default function ThemenAuswahl() {
+export default function ProbeAuswahl() {
   const nav = useNav()
   const { stand } = useInhalt()
   const auswahl = useThemenAuswahl()
@@ -25,12 +26,12 @@ export default function ThemenAuswahl() {
 
   return (
     <>
-      <Zurueck text="Themen" />
+      <Zurueck text={zurueckText(nav.vorher)} />
       <Kopf eyebrow="Probenfolien" titel="Auswahl" klein />
 
       {!d && <p className="note">{stand.art === 'fehler' ? 'Die Themen konnten nicht geladen werden.' : 'Lädt …'}</p>}
 
-      {d && n === 0 && <p className="note">Noch nichts ausgewählt. Unter „Probe“ rechts neben einer Übung auf + tippen.</p>}
+      {d && n === 0 && <p className="note">Noch nichts ausgewählt. Im Reiter „Einsingen“ rechts neben einer Übung auf + tippen.</p>}
 
       {d && n > 0 && (
         <>

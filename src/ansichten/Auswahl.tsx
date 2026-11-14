@@ -20,7 +20,7 @@ export default function Auswahl() {
 
   return (
     <>
-      <Zurueck text="Übungen" />
+      <Zurueck text="Sammlung" />
       <Kopf eyebrow="Probenfolien" titel="Auswahl" klein />
 
       {!s && <p className="note">{stand.art === 'fehler' ? 'Die Übungen konnten nicht geladen werden.' : 'Lädt …'}</p>}

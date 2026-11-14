@@ -4,7 +4,7 @@ import { folienDateiname } from './folie'
 import FolienAnsicht from './FolienAnsicht'
 
 // Karte „Probenfolien“: das PDF erzeugen und öffnen, teilen oder herunterladen.
-// Genutzt von der Auswahl im Reiter „Einsingen“ und von der Auswahl im neuen Aufbau (Reiter „Themen“).
+// Genutzt von der Auswahlseite (ansichten/ProbeAuswahl.tsx).
 
 type ExportStand =
   | { art: 'bereit' }

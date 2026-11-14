@@ -447,16 +447,7 @@ body:has(.auswahl-leiste) .toast { bottom: calc(164px + env(safe-area-inset-bott
   body:has(.auswahl-leiste) .toast { bottom: calc(88px + env(safe-area-inset-bottom, 0px)); }
 }
 
-/* ---------- Reiter Einsingen ---------- */
-.ein-phasenkopf {
-  display: flex; align-items: center; gap: 8px; width: 100%; min-height: 40px; margin: 4px 0 0; padding: 0;
-  border: 0; background: transparent; cursor: pointer; text-align: left; color: var(--label);
-}
-.ein-phasenname { font-family: var(--font-label); font-weight: 600; font-size: 14px; letter-spacing: .14em; text-transform: uppercase; }
-.ein-phasenzahl { margin-left: auto; font-size: 13px; color: var(--muted); }
-.ein-phasenkopf svg { flex-shrink: 0; color: var(--muted); transition: transform .15s; }
-.ein-phasenkopf[aria-expanded="false"] svg { transform: rotate(-90deg); }
-@media (prefers-reduced-motion: reduce) { .ein-phasenkopf svg { transition: none; } }
+/* ---------- Auswahlknopf und Zeilen (Reiter Übungen und Einsingen) ---------- */
 .meta.ein-ziel { display: block; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .ein-lage { margin: 0; font-size: 14px; color: var(--muted); }
 .ein-zeile { display: flex; align-items: center; gap: 8px; }
@@ -471,15 +462,12 @@ body:has(.auswahl-leiste) .toast { bottom: calc(164px + env(safe-area-inset-bott
 .head:has(.ein-wahl) .headrow { flex-wrap: nowrap; align-items: flex-start; }
 .head:has(.ein-wahl) .headrow h1 { flex: 1; min-width: 0; }
 .head:has(.ein-wahl) .headrow .ein-wahl { margin-top: 2px; }
-/* Gruppe kurzer Übungen: Teile nacheinander, jeder mit eigener Überschrift */
+/* Grundübung einer Familie mit eigener Überschrift */
 .ein-teil { display: flex; flex-direction: column; gap: 14px; padding-top: 14px; border-top: 1px solid var(--line-soft); }
 .ein-teil:first-of-type { border-top: 0; padding-top: 0; }
 .ein-teilname { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.15; color: var(--ink); }
 
-/* ---------- Reiter Themen (neuer Aufbau: Themenseiten und Familien) ---------- */
-/* Sechs Reiter: die Beschriftung darf in der Leiste unten nicht umbrechen */
-.tabs:not(.seite) .tab span { white-space: nowrap; }
-@media (max-width: 400px) { .tabs:not(.seite) .tab span { font-size: 10.5px; letter-spacing: .04em; } }
+/* ---------- Reiter Übungen und Einsingen (Themenseiten, Familien, Auswahl) ---------- */
 .th-themazeile { padding-top: 4px; }
 .th-themaname { font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.15; color: var(--ink); }
 /* Im Chor erkennen: die Beobachtung, darunter die Familie zum Antippen */
@@ -532,13 +520,6 @@ button.th-stufenkopf { cursor: pointer; }
 /* Noten einer Stufe ohne eigenen Rahmen, damit sie in der Karte die volle Breite haben */
 .th-stufeninhalt .notenblock { border: 0; border-radius: 0; padding: 0; background: transparent; }
 
-/* Umschalter Vorbereiten | Probe */
-.th-umschalter { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }
-.th-umschalter button {
-  min-height: 38px; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer;
-  font-family: var(--font-label); font-weight: 600; font-size: 14px; letter-spacing: .12em; text-transform: uppercase;
-}
-.th-umschalter button[aria-pressed="true"] { background: var(--brand); color: var(--on-brand); }
 /* Stufe mit Auswahlknopf rechts */
 .th-stufenzeile { display: flex; align-items: flex-start; gap: 2px; padding-right: 10px; }
 .th-stufenzeile .th-stufenkopf { flex: 1; min-width: 0; }

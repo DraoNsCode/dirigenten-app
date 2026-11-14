@@ -1,11 +1,45 @@
 import { useState, type ReactNode } from 'react'
 import { useMeldung } from '../meldung'
-import { useBereich, useNav } from '../navigation'
+import { useBereich, useNav, type Ansicht } from '../navigation'
 import { Folien, Haken, Plus, Rechts, Runter } from '../symbole'
+import { Fehlerkarte } from '../bausteine'
 import { useThemenAuswahl } from './auswahl'
+import type { InhaltStand } from './daten'
 import type { Wahl } from './folie'
 
-// Bausteine der Themen- und Familienseiten (neuer Aufbau)
+// Bausteine der Reiter „Übungen“ und „Einsingen“ (Themen- und Familienseiten, Auswahl)
+
+/** Was beim Laden oder bei einem Fehler statt der Liste steht */
+export function Ladezustand({ stand, neuLaden }: { stand: InhaltStand; neuLaden: () => void }) {
+  if (stand.art === 'leer' || stand.art === 'laedt') return <p className="note">Lädt …</p>
+  if (stand.art !== 'fehler') return null
+  if (!stand.fehlt) return <Fehlerkarte text={stand.text} nochmal={neuLaden} />
+  return (
+    <section className="card">
+      <h2>Noch keine Übungen</h2>
+      <p>Die Übungen sind noch nicht hochgeladen.</p>
+      <button className="textbtn" type="button" onClick={neuLaden}>
+        Noch einmal versuchen
+      </button>
+    </section>
+  )
+}
+
+/** Beschriftung von „Zurück“ je nach der Ansicht, von der aus geöffnet wurde */
+export function zurueckText(vorher: Ansicht | undefined, themaName?: (id: string) => string | undefined): string {
+  switch (vorher?.v) {
+    case 'vorbereiten':
+      return 'Übungen'
+    case 'probe':
+      return 'Einsingen'
+    case 'probe-auswahl':
+      return 'Auswahl'
+    case 'thema':
+      return themaName?.(vorher.id) ?? 'Thema'
+    default:
+      return 'Zurück'
+  }
+}
 
 /** Text mit Leerzeilen als Absätze */
 export function Absaetze({ text }: { text: string }) {
@@ -68,8 +102,8 @@ export function ThemenLeiste() {
       <button
         type="button"
         className="primary links"
-        aria-current={nav.detail?.v === 'themen-auswahl' ? 'true' : undefined}
-        onClick={() => nav.geh({ v: 'themen-auswahl' })}
+        aria-current={nav.detail?.v === 'probe-auswahl' ? 'true' : undefined}
+        onClick={() => nav.geh({ v: 'probe-auswahl' })}
       >
         <Folien />
         <span>Auswahl ({n}): Folien erstellen</span>

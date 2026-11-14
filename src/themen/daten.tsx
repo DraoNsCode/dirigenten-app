@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { supabase } from '../supabase'
 import { FORMATE, type Familie, type InhaltDatei, type Thema } from './typen'
 
-// Themen und Familien (neuer Aufbau): Der GitHub-Ablauf im privaten Repo dirigenten-app-uebungen lädt bei jeder
+// Themen und Familien der Reiter „Übungen“ und „Einsingen“: Der GitHub-Ablauf im privaten Repo dirigenten-app-uebungen lädt bei jeder
 // Änderung dirigenten-inhalt.json in den privaten Supabase-Speicher „uebungen“ (nur angemeldete Konten).
 // Geladen wird erst, wenn die Ansicht sie braucht; danach bleibt sie im Speicher der App.
 

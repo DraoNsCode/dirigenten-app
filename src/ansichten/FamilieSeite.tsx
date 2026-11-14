@@ -5,10 +5,10 @@ import { Runter } from '../symbole'
 import { Abschnitt } from '../uebungen/Teile'
 import NotenAnsicht from '../einsingen/NotenAnsicht'
 import { useInhalt } from '../themen/daten'
-import { ThemenLeiste, ThemenWahlKnopf } from '../themen/Teile'
+import { ThemenLeiste, ThemenWahlKnopf, zurueckText } from '../themen/Teile'
 import type { Angaben, Folie, Stufe } from '../themen/typen'
 
-// Familienseite (neuer Aufbau): die Grundübung in der Lesereihenfolge des Dirigenten – Noten, Ziel, Ansage,
+// Familienseite: die Grundübung in der Lesereihenfolge des Dirigenten – Noten, Ziel, Ansage,
 // „Gelingt, wenn“, typischer Fehler –, darunter die Stufen. Eine Stufe zeigt, was sich ändert; hat sie eigene
 // Noten, Texte oder eine eigene Folie, lässt sie sich aufklappen. Die Grundübung (Knopf neben dem Titel) und jede
 // Stufe lassen sich für die Probenfolien auswählen, auch mehrere zugleich.
@@ -100,9 +100,7 @@ export default function FamilieSeite({ id }: { id: string }) {
   const { stand } = useInhalt()
   const d = stand.art === 'bereit' ? stand.d : null
   const f = d?.familie.get(id)
-  const vorher = nav.vorher
-  const zurueck =
-    vorher?.v === 'thema' ? (d?.thema.get(vorher.id)?.name ?? 'Thema') : vorher?.v === 'themen' ? 'Themen' : vorher?.v === 'themen-auswahl' ? 'Auswahl' : 'Zurück'
+  const zurueck = zurueckText(nav.vorher, (tid) => d?.thema.get(tid)?.name)
 
   if (!f) {
     return (
