@@ -3,7 +3,7 @@ import type { TuneObject } from 'abcjs'
 import { istRhythmus, schlag } from '../uebungen/abc'
 import { spielen, stoppen, stoppenWenn, type Ereignis } from '../uebungen/klang'
 import { ladeAbcjs, zeilenbreite } from '../uebungen/Noten'
-import { notenZeichnen, type Abcjs } from './zeichnen'
+import { KURZ_APP, notenZeichnen, type Abcjs } from './zeichnen'
 
 // Noten einer Übung fürs Einsingen: darüber ein Hinweis (falls vorhanden), darunter die Lageangabe,
 // dann „Ausgangston“ und „Anhören“ (mit mitlaufender Markierung). Kein Metronom, kein Transponieren.
@@ -89,7 +89,7 @@ export default function NotenAnsicht({ abc, hinweis, lage }: { abc: string; hinw
         if (!aktiv || !ziel.current) return
         stoppenWenn(spielId.current)
         try {
-          const tune = notenZeichnen(abcjs, ziel.current, abc, zeilenbreite(breite))
+          const tune = notenZeichnen(abcjs, ziel.current, abc, zeilenbreite(breite), undefined, undefined, KURZ_APP)
           gezeichnet.current = { abcjs, tune }
           setFehler(false)
         } catch {

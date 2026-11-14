@@ -2,12 +2,16 @@ import type { TuneObject } from 'abcjs'
 import { ladeAbcjs, zeichnen, zuschneiden } from '../uebungen/Noten'
 
 // Noten fürs Einsingen zeichnen (App und Folien):
-// - Übungen bis zwei Takte werden nie umgebrochen; zu breite Zeilen werden verkleinert (CSS max-width bzw. Skalierung im PDF).
+// - Kurze Übungen werden nie umgebrochen: auf den Folien bis zwei Takte, in der App bis drei (drei Takte brachen am Handy in 2 + 1 um); zu breite Zeilen werden verkleinert (CSS max-width bzw. Skalierung im PDF).
 // - Silben und Ziffern stehen mittig unter ihrem Notenkopf (abcjs setzt sie um eine halbe Kopfbreite zu weit links).
 // - Berührt eine Silbe einen Bogen, eine Hilfslinie oder eine tiefe Note, rückt die ganze Silbenzeile tiefer (%%vocalspace).
 // - Die Tempoangabe (Q:) wird nicht gezeigt.
 
 export type Abcjs = Awaited<ReturnType<typeof ladeAbcjs>>
+
+/** Bis zu so vielen Takten wird eine Übung nie umgebrochen, sondern verkleinert: auf den Folien und in der App */
+export const KURZ_FOLIE = 2
+export const KURZ_APP = 3
 
 /** Mindestabstand zwischen Silben und den Zeichen darüber (SVG-Einheiten) */
 const ABSTAND = 7
@@ -104,12 +108,21 @@ function fehlenderAbstand(svg: SVGSVGElement): number {
  * Zeichnet die Noten in `ziel` mit einer Notenzeile von `breite` Einheiten.
  * Rückgabe: das gezeichnete Stück (zum Abspielen und Markieren).
  */
-export function notenZeichnen(abcjs: Abcjs, ziel: HTMLElement, abc: string, breite: number, schrift = 'Barlow', farbe = 'currentColor'): TuneObject {
-  const kurz = taktAnzahl(abcjs, abc) <= 2
+export function notenZeichnen(
+  abcjs: Abcjs,
+  ziel: HTMLElement,
+  abc: string,
+  breite: number,
+  schrift = 'Barlow',
+  farbe = 'currentColor',
+  kurzBis = KURZ_FOLIE,
+): TuneObject {
+  const kurz = taktAnzahl(abcjs, abc) <= kurzBis
   const malen = (abstand: number): TuneObject => {
     const text = abcZumZeigen(abc, schrift, abstand)
     if (!kurz) return zeichnen(abcjs, ziel, text, breite, farbe)
-    const grund = { add_classes: true, staffwidth: breite, minPadding: 8, paddingtop: 0, paddingbottom: 0, paddingleft: 0, paddingright: 0, foregroundColor: farbe }
+    // selectTypes: false – angetippte Noten werden nicht ausgewählt (abcjs färbt sie sonst rot)
+    const grund = { add_classes: true, staffwidth: breite, minPadding: 8, paddingtop: 0, paddingbottom: 0, paddingleft: 0, paddingright: 0, foregroundColor: farbe, selectTypes: false as const }
     return abcjs.renderAbc(ziel, text, grund)[0]
   }
   let tune = malen(0)

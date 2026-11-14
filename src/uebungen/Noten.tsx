@@ -67,7 +67,8 @@ export function zuschneiden(svg: SVGSVGElement | null) {
  * damit keine fast leere letzte Zeile entsteht.
  */
 export function zeichnen(abcjs: Abcjs, ziel: HTMLElement, abc: string, breite: number, farbe = 'currentColor'): TuneObject {
-  const grund = { add_classes: true, staffwidth: breite, minPadding: 8, paddingtop: 0, paddingbottom: 0, paddingleft: 0, paddingright: 0, foregroundColor: farbe }
+  // selectTypes: false – angetippte Noten werden nicht ausgewählt (abcjs färbt sie sonst rot)
+  const grund = { add_classes: true, staffwidth: breite, minPadding: 8, paddingtop: 0, paddingbottom: 0, paddingleft: 0, paddingright: 0, foregroundColor: farbe, selectTypes: false as const }
   let tune = abcjs.renderAbc(ziel, abc, { ...grund, wrap: { minSpacing: 1.4, maxSpacing: 2.4, preferredMeasuresPerLine: 8 } })[0]
   const zeilen = (tune.lines ?? []).filter((l) => l.staff)
   let takte = 0
