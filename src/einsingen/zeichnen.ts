@@ -17,8 +17,10 @@ export const KURZ_APP = 3
 const ABSTAND = 7
 
 /** ABC so, wie es gezeigt wird: Schrift für Silben und Ziffern, Abstand der Silben, ohne Tempoangabe */
-export function abcZumZeigen(abc: string, schrift = 'Barlow', silbenAbstand = 0): string {
+export function abcZumZeigen(abc: string, schrift = 'Barlow', silbenAbstand = 0, natuerlich = false): string {
   const kopf = [`%%vocalfont ${schrift} 13 bold`, `%%annotationfont ${schrift} 12`]
+  // Die letzte (bei kurzen Übungen: einzige) Zeile nicht in die Breite ziehen
+  if (natuerlich) kopf.push('%%stretchlast false')
   if (silbenAbstand > 0) kopf.push(`%%vocalspace ${silbenAbstand.toFixed(1)}`)
   return abc.replace(/^Q:.*\n?/m, '').replace(/^(X:.*)$/m, `$1\n${kopf.join('\n')}`)
 }
@@ -115,11 +117,12 @@ export function notenZeichnen(
   breite: number,
   schrift = 'Barlow',
   farbe = 'currentColor',
-  kurzBis = KURZ_FOLIE,
+  /** kurzBis: bis zu so vielen Takten kein Umbruch; natuerlich: kurze Übungen behalten ihren natürlichen Notenabstand */
+  { kurzBis = KURZ_FOLIE, natuerlich = false }: { kurzBis?: number; natuerlich?: boolean } = {},
 ): TuneObject {
   const kurz = taktAnzahl(abcjs, abc) <= kurzBis
   const malen = (abstand: number): TuneObject => {
-    const text = abcZumZeigen(abc, schrift, abstand)
+    const text = abcZumZeigen(abc, schrift, abstand, natuerlich && kurz)
     if (!kurz) return zeichnen(abcjs, ziel, text, breite, farbe)
     // selectTypes: false – angetippte Noten werden nicht ausgewählt (abcjs färbt sie sonst rot)
     const grund = { add_classes: true, staffwidth: breite, minPadding: 8, paddingtop: 0, paddingbottom: 0, paddingleft: 0, paddingright: 0, foregroundColor: farbe, selectTypes: false as const }

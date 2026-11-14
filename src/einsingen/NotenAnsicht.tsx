@@ -89,7 +89,7 @@ export default function NotenAnsicht({ abc, hinweis, lage }: { abc: string; hinw
         if (!aktiv || !ziel.current) return
         stoppenWenn(spielId.current)
         try {
-          const tune = notenZeichnen(abcjs, ziel.current, abc, zeilenbreite(breite), undefined, undefined, KURZ_APP)
+          const tune = notenZeichnen(abcjs, ziel.current, abc, zeilenbreite(breite), undefined, undefined, { kurzBis: KURZ_APP })
           gezeichnet.current = { abcjs, tune }
           setFehler(false)
         } catch {

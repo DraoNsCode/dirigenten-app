@@ -12,6 +12,10 @@ const DATEI = 'dirigenten-inhalt.json'
 const NEU_NACH_MS = 10 * 60_000
 
 export type Inhalt = {
+  /** Phasen des Einsingens in ihrer Reihenfolge, jede mit ihren Familien */
+  phasen: { name: string; familien: Familie[] }[]
+  /** alle Familien in der Reihenfolge der Liste (Phase, Thema, Stelle im Thema) */
+  familien: Familie[]
   themen: Thema[]
   thema: Map<string, Thema>
   familie: Map<string, Familie>
@@ -27,6 +31,8 @@ export const InhaltKontext = createContext<Kontext | null>(null)
 
 export function aufbereiten(datei: InhaltDatei): Inhalt {
   return {
+    phasen: datei.phasen.map((name) => ({ name, familien: datei.familien.filter((f) => f.phase === name) })),
+    familien: datei.familien,
     themen: datei.themen,
     thema: new Map(datei.themen.map((t) => [t.id, t])),
     familie: new Map(datei.familien.map((f) => [f.id, f])),

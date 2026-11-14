@@ -3,7 +3,7 @@ import { useNav } from '../navigation'
 import { Rechts } from '../symbole'
 import { Abschnitt } from '../uebungen/Teile'
 import { useInhalt } from '../themen/daten'
-import { Absaetze, Klappe } from '../themen/Teile'
+import { Absaetze, Klappe, ThemenLeiste } from '../themen/Teile'
 import type { Familie } from '../themen/typen'
 
 // Themenseite (neuer Aufbau): immer sichtbar sind der Kern, „Im Chor erkennen“ und die Familien;
@@ -73,6 +73,7 @@ export default function ThemaSeite({ id }: { id: string }) {
           ))}
         </div>
       )}
+      <ThemenLeiste />
     </>
   )
 }

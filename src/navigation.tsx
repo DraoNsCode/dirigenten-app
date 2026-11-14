@@ -22,6 +22,7 @@ export type Ansicht =
   | { v: 'themen' }
   | { v: 'thema'; id: string }
   | { v: 'familie'; id: string }
+  | { v: 'themen-auswahl' }
 
 /** Einstellungen im Reiter Lieder; bleiben erhalten, solange die App offen ist */
 export type LiederEinstellung = {

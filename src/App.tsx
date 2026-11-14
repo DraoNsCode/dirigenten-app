@@ -41,6 +41,8 @@ import Themen from './ansichten/Themen'
 import ThemaSeite from './ansichten/ThemaSeite'
 import FamilieSeite from './ansichten/FamilieSeite'
 import { InhaltProvider } from './themen/daten'
+import { ThemenAuswahlProvider } from './themen/auswahl'
+import ThemenAuswahl from './ansichten/ThemenAuswahl'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
@@ -79,7 +81,9 @@ export default function App() {
             <EinsingenProvider>
               <EinsingAuswahlProvider>
                 <InhaltProvider>
-                  <Hauptansicht email={sitzung.user.email ?? ''} />
+                  <ThemenAuswahlProvider>
+                    <Hauptansicht email={sitzung.user.email ?? ''} />
+                  </ThemenAuswahlProvider>
                 </InhaltProvider>
               </EinsingAuswahlProvider>
             </EinsingenProvider>
@@ -183,6 +187,8 @@ function Hauptansicht({ email }: { email: string }) {
         return <ThemaSeite key={a.id} id={a.id} />
       case 'familie':
         return <FamilieSeite key={a.id} id={a.id} />
+      case 'themen-auswahl':
+        return <ThemenAuswahl />
     }
   }
 

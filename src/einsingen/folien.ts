@@ -6,7 +6,7 @@ import dejavuFett from '../uebungen/schriften/dejavu-sans-bold.ttf?url'
 import cormorant600 from './schriften/cormorant-garamond-600.ttf?url'
 import barlowSchmal600 from './schriften/barlow-condensed-600.ttf?url'
 import { ladeAbcjs } from '../uebungen/Noten'
-import { notenZeichnen, type Abcjs } from './zeichnen'
+import { KURZ_APP, notenZeichnen, type Abcjs } from './zeichnen'
 import { folienFolge, type Folie } from './folie'
 import type { Eintrag } from './daten'
 
@@ -16,6 +16,9 @@ import type { Eintrag } from './daten'
 // System aus der Gemeinde-Vorlage abgeleitet (helles Design, Variante B): Hellgrund, Dunkeltext,
 // Titel in Cormorant Garamond an der Stelle der Überschrift der Vorlage, Dachzeile und Fußzeile in Barlow Condensed.
 // Größen: Daniel, 11.11.2026 (Titel 37, Stichpunkte 26, Dachzeile 12, Fußzeile 10, Noten höchstens 1,6-fach).
+//
+// Seit 14.11.2026 gilt die Gestaltung „gleich groß“ (siehe folieGleichGross): gleicher Aufbau, aber die Noten sind auf
+// jeder Folie gleich groß und Text ohne Noten steht größer. Die Fassung vom 11.11. bleibt als 'titel-oben' erhalten.
 
 const B = 960
 const H = 540
@@ -176,10 +179,10 @@ function listeZeichnen(doc: JsPDF, punkte: string[], g: Groessen, s: Struktur) {
   }
 }
 
-function notenFuerPdf(abcjs: Abcjs, halter: HTMLElement, abc: string): SVGSVGElement | null {
+function notenFuerPdf(abcjs: Abcjs, halter: HTMLElement, abc: string, zeilenbreite = 620, opt?: { kurzBis?: number; natuerlich?: boolean }): SVGSVGElement | null {
   const ziel = document.createElement('div')
   halter.append(ziel)
-  notenZeichnen(abcjs, ziel, abc, 620, NOTEN, FARBE.tinte)
+  notenZeichnen(abcjs, ziel, abc, zeilenbreite, NOTEN, FARBE.tinte, opt)
   const svg = ziel.querySelector('svg')
   if (!svg) return null
   svg.querySelectorAll('text').forEach((n) => {
@@ -202,6 +205,74 @@ async function svgEinsetzen(svg2pdf: Svg2pdf, doc: JsPDF, svg: SVGSVGElement, x:
   await svg2pdf(svg, doc, { x: x + (breite - bw) / 2, y: y + Math.max(0, (hoehe - bh) / 2.5), width: bw, height: bh })
 }
 
+// ---------- Gestaltung „gleich groß“ (seit 14.11.2026) ----------
+
+/** Größter Text ohne Noten (Punkt) und die Breite, bis zu der er in einer Zeile bleibt */
+const TEXT_GROSS = 40
+const TEXT_EINZEILIG = 0.75
+
+/**
+ * Aufbau wie „Titel oben“ (Dachzeile, Titel links oben, Fußzeile; Inhalt mittig darunter), aber:
+ * - Noten haben auf jeder Folie dieselbe Größe und ihren natürlichen Abstand. Vorher wurden Übungen ab drei Takten
+ *   in die Breite gezogen und dafür verkleinert, sodass Silben und Ziffern von Folie zu Folie verschieden groß waren.
+ * - Text ohne Noten steht größer; eine Folge mit „ – “, die zu breit würde, steht Glied für Glied untereinander.
+ */
+async function folieGleichGross(
+  doc: JsPDF,
+  f: Folie,
+  g: Groessen,
+  s: Struktur,
+  vermerk: string | undefined,
+  mittel: { svg2pdf: Svg2pdf; abcjs: Abcjs; halter: HTMLElement },
+) {
+  doc.setFillColor(FARBE.grund)
+  doc.rect(0, 0, B, H, 'F')
+  titelZeichnen(doc, f, g, s)
+  const oben = obenVon(g, s)
+  const unten = untenVon(s)
+  const breite = B - 2 * RAND
+  if (f.inhalt.art === 'noten') {
+    // Zeilenbreite so, dass die Noten bei fester Vergrößerung die Folienbreite füllen; bis drei Takte kein Umbruch
+    const svg = notenFuerPdf(mittel.abcjs, mittel.halter, f.inhalt.abc, Math.floor(breite / g.noten), { kurzBis: KURZ_APP, natuerlich: true })
+    if (svg) await svgEinsetzen(mittel.svg2pdf, doc, svg, RAND, oben, breite, unten - oben, g.noten)
+  } else if (f.inhalt.art === 'text') {
+    const text = f.inhalt.text
+    doc.setFont(lateinisch(text) ? TEXT : NOTEN, 'bold')
+    const passt = (t: string, groesse: number, anteil = 1) => {
+      doc.setFontSize(groesse)
+      return doc.getTextWidth(t) <= breite * anteil
+    }
+    let groesse = TEXT_GROSS
+    let zeilen = [text]
+    if (!passt(text, groesse, TEXT_EINZEILIG)) {
+      const glieder = text.split(/\s+–\s+/)
+      if (glieder.length > 1 && glieder.every((glied) => passt(glied, groesse, TEXT_EINZEILIG))) zeilen = glieder
+      else {
+        while (groesse > g.text && !passt(text, groesse)) groesse -= 2
+        doc.setFontSize(groesse)
+        zeilen = doc.splitTextToSize(text, breite) as string[]
+      }
+    }
+    doc.setFontSize(groesse)
+    const zeilenhoehe = groesse * 1.3
+    const start = (oben + unten) / 2 - ((zeilen.length - 1) * zeilenhoehe) / 2 + groesse * 0.35
+    doc.setTextColor(FARBE.tinte)
+    zeilen.forEach((zeile, i) => doc.text(zeile, B / 2, start + i * zeilenhoehe, { align: 'center', baseline: 'alphabetic' }))
+  } else if (f.inhalt.art === 'liste') {
+    listeZeichnen(doc, f.inhalt.punkte, g, s)
+  }
+  vermerkZeichnen(doc, vermerk)
+}
+
+/** Nur in Vergleichs-PDFs: welche Fassung diese Seite zeigt */
+function vermerkZeichnen(doc: JsPDF, vermerk: string | undefined) {
+  if (!vermerk) return
+  doc.setFont(TEXT, 'normal')
+  doc.setFontSize(10)
+  doc.setTextColor(FARBE.grau)
+  doc.text(vermerk, B - RAND, H - 18, { align: 'right', baseline: 'alphabetic' })
+}
+
 async function folieZeichnen(
   doc: JsPDF,
   f: Folie,
@@ -222,24 +293,31 @@ async function folieZeichnen(
   } else if (f.inhalt.art === 'liste') {
     listeZeichnen(doc, f.inhalt.punkte, g, s)
   }
-  // Nur in Vergleichs-PDFs: welche Größen diese Seite zeigt
-  if (vermerk) {
-    doc.setFont(TEXT, 'normal')
-    doc.setFontSize(10)
-    doc.setTextColor(FARBE.grau)
-    doc.text(vermerk, B - RAND, H - 18, { align: 'right', baseline: 'alphabetic' })
-  }
+  vermerkZeichnen(doc, vermerk)
 }
+
+/** 'titel-oben': Fassung vom 11.11.2026; 'gleich-gross': Noten überall gleich groß, Text größer (seit 14.11.2026, die übliche Fassung) */
+export type Gestaltung = 'titel-oben' | 'gleich-gross'
+type Variante = { groessen: Groessen; struktur?: Struktur; vermerk?: string; gestaltung?: Gestaltung }
 
 /** Erzeugt die Folien als PDF; `fortschritt` meldet „Folie n von m“ */
 export async function einsingFolien(
   eintraege: Eintrag[],
   fortschritt?: (n: number, m: number) => void,
   /** Nur zum Vergleichen: jede Folie in mehreren Größen, mit Vermerk */
-  varianten: { groessen: Groessen; struktur?: Struktur; vermerk?: string }[] = [{ groessen: GROESSEN, struktur: STRUKTUR }],
+  varianten: Variante[] = [{ groessen: GROESSEN, struktur: STRUKTUR }],
+): Promise<Blob> {
+  return folienPdf(folienFolge(eintraege), fortschritt, varianten)
+}
+
+/** Erzeugt ein PDF aus fertigen Folien (ohne gleiche Folien hintereinander zusammenzufassen) */
+export async function folienPdf(
+  liste: Folie[],
+  fortschritt?: (n: number, m: number) => void,
+  varianten: Variante[] = [{ groessen: GROESSEN, struktur: STRUKTUR }],
 ): Promise<Blob> {
   const [{ jsPDF }, { svg2pdf }, abcjs, schriften] = await Promise.all([import('jspdf'), import('svg2pdf.js'), ladeAbcjs(), ladeSchriften()])
-  const folien = folienFolge(eintraege).flatMap((f) => varianten.map((v) => ({ f, ...v })))
+  const folien = liste.flatMap((f) => varianten.map((v) => ({ f, ...v })))
   if (!folien.length) throw new Error('Keine Folien')
 
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [B, H], compress: true })
@@ -255,7 +333,8 @@ export async function einsingFolien(
     for (let i = 0; i < folien.length; i++) {
       if (i > 0) doc.addPage([B, H], 'landscape')
       fortschritt?.(i + 1, folien.length)
-      await folieZeichnen(doc, folien[i].f, folien[i].groessen, folien[i].struktur ?? {}, folien[i].vermerk, { svg2pdf, abcjs, halter })
+      const zeichne = folien[i].gestaltung === 'titel-oben' ? folieZeichnen : folieGleichGross
+      await zeichne(doc, folien[i].f, folien[i].groessen, folien[i].struktur ?? {}, folien[i].vermerk, { svg2pdf, abcjs, halter })
       halter.replaceChildren()
     }
   } finally {
