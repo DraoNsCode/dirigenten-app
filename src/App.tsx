@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
+import { flushSync } from 'react-dom'
 import type { Session } from '@supabase/supabase-js'
 import { supabase } from './supabase'
 import Anmeldung from './Anmeldung'
@@ -47,6 +48,16 @@ const START: Record<Reiter, Ansicht> = {
   menue: { v: 'menue' },
   sammlung: { v: 'uebungen' },
 }
+
+/**
+ * Verlauf (Daniel, 16.11.2026): Jede geöffnete Ansicht ist ein Eintrag im Browserverlauf. So funktionieren
+ * das gewohnte Zurück-Wischen vom linken Rand (iPhone, auch als App auf dem Home-Bildschirm), die Zurück-Geste
+ * auf Android und die Zurück-Taste im Browser. Jeder Eintrag trägt den ganzen Stapel; ein Reiterwechsel
+ * erzeugt keinen Zurück-Schritt (der Verlauf wird auf den ersten Eintrag zurückgesetzt).
+ */
+type VerlaufsEintrag = { dirigentenApp: 1; tiefe: number; reiter: Reiter; stapel: Ansicht[]; generation: number }
+const istEintrag = (x: unknown): x is VerlaufsEintrag => !!x && (x as VerlaufsEintrag).dirigentenApp === 1
+const gleich = (a: Ansicht[], b: Ansicht[]) => JSON.stringify(a) === JSON.stringify(b)
 
 export default function App() {
   // undefined = wird noch geprüft, null = nicht angemeldet
@@ -99,15 +110,133 @@ function Hauptansicht({ email }: { email: string }) {
   const aktuell = useRef({ reiter, stapel })
   aktuell.current = { reiter, stapel }
 
+  // ---------- Verlauf ----------
+  /** Tiefe des angezeigten Eintrags im Verlauf (0 = erster Eintrag der App) */
+  const tiefe = useRef(0)
+  /** Scrollstand je Tiefe, damit eine Ansicht beim Zurückgehen dort steht, wo man sie verlassen hat */
+  const scrollMerker = useRef<number[]>([])
+  const scrollZiel = useRef<number | null>(null)
+  /** Eintrag, der nach dem Zurückspulen des Verlaufs (Reiterwechsel) gesetzt wird */
+  const ruecksetzen = useRef<VerlaufsEintrag | null>(null)
+  /** Jeder Neubeginn (Start, Reiterwechsel) ist eine neue Generation; ältere Einträge (z. B. „vorwärts“
+   *  in einen verlassenen Reiter) werden nicht angezeigt */
+  const generation = useRef(Date.now())
+  const ignoriereNaechstes = useRef(false)
+  const eintrag = (t: number, r: Reiter, s: Ansicht[]): VerlaufsEintrag => ({
+    dirigentenApp: 1,
+    tiefe: t,
+    reiter: r,
+    stapel: s,
+    generation: generation.current,
+  })
+
+  const setze = useCallback((r: Reiter, s: Ansicht[]) => {
+    aktuell.current = { reiter: r, stapel: s }
+    setReiter(r)
+    setStapel(s)
+  }, [])
+  const merkeScroll = () => {
+    scrollMerker.current[tiefe.current] = ansicht.current?.scrollTop ?? 0
+  }
+
+  /** Neue Ansicht: neuer Eintrag im Verlauf (vor dem Umschalten, damit iOS die alte Ansicht als Bild behält) */
+  const vorwaerts = useCallback((s: Ansicht[]) => {
+    merkeScroll()
+    tiefe.current += 1
+    history.pushState(eintrag(tiefe.current, aktuell.current.reiter, s), '')
+    setze(aktuell.current.reiter, s)
+  }, [setze])
+
+  /** Oberste Ansicht austauschen, ohne Zurück-Schritt */
+  const ersetzeOben = useCallback((s: Ansicht[]) => {
+    history.replaceState(eintrag(tiefe.current, aktuell.current.reiter, s), '')
+    setze(aktuell.current.reiter, s)
+  }, [setze])
+
+  /** Neu beginnen (Reiterwechsel, Sprung in eine Woche): keine Zurück-Schritte */
+  const neuBeginnen = useCallback((r: Reiter, s: Ansicht[]) => {
+    setze(r, s)
+    scrollMerker.current = []
+    generation.current += 1
+    const e = eintrag(0, r, s)
+    const d = tiefe.current
+    tiefe.current = 0
+    if (d > 0) {
+      ruecksetzen.current = e
+      history.go(-d)
+    } else history.replaceState(e, '')
+  }, [setze])
+
+  const zurueck = useCallback(() => {
+    const s = aktuell.current.stapel
+    if (s.length <= 1) return
+    const neu = s.slice(0, -1)
+    merkeScroll()
+    const d = tiefe.current
+    if (d > 0) {
+      // Sofort umschalten; das folgende popstate bringt denselben Stapel und ändert nichts mehr
+      tiefe.current = d - 1
+      scrollZiel.current = scrollMerker.current[d - 1] ?? null
+      setze(aktuell.current.reiter, neu)
+      history.back()
+    } else {
+      history.replaceState(eintrag(0, aktuell.current.reiter, neu), '')
+      setze(aktuell.current.reiter, neu)
+    }
+  }, [setze])
+
+  useEffect(() => {
+    // Nach einem Neuladen liegen ältere Einträge davor: die Tiefe des Eintrags behalten,
+    // damit die Tiefe immer dem Abstand zum ersten Eintrag der App entspricht
+    tiefe.current = istEintrag(history.state) ? history.state.tiefe : 0
+    history.replaceState(eintrag(tiefe.current, aktuell.current.reiter, aktuell.current.stapel), '')
+    const beiPop = (e: PopStateEvent) => {
+      if (ignoriereNaechstes.current) {
+        ignoriereNaechstes.current = false
+        return
+      }
+      const z = ruecksetzen.current
+      if (z) {
+        ruecksetzen.current = null
+        history.replaceState(z, '')
+        return
+      }
+      if (!istEintrag(e.state)) return
+      const { reiter: r, stapel: s, tiefe: t } = e.state
+      if (e.state.generation !== generation.current) {
+        // Eintrag aus einem verlassenen Reiter oder einer früheren Sitzung: zurück an die aktuelle Stelle
+        if (t !== tiefe.current) {
+          ignoriereNaechstes.current = true
+          history.go(tiefe.current - t)
+        } else history.replaceState(eintrag(t, aktuell.current.reiter, aktuell.current.stapel), '')
+        return
+      }
+      if (t === tiefe.current && r === aktuell.current.reiter && gleich(s, aktuell.current.stapel)) return
+      merkeScroll()
+      tiefe.current = t
+      scrollZiel.current = scrollMerker.current[t] ?? null
+      // Sofort zeichnen, damit nach der Wisch-Animation von iOS nicht kurz die alte Ansicht erscheint
+      flushSync(() => setze(r, s))
+    }
+    window.addEventListener('popstate', beiPop)
+    return () => window.removeEventListener('popstate', beiPop)
+  }, [])
+
+  // Scrollstand nach dem Zurückgehen wiederherstellen (breit: die Liste links bleibt ohnehin stehen)
+  useLayoutEffect(() => {
+    if (scrollZiel.current == null) return
+    if (layout !== 'breit' && ansicht.current) ansicht.current.scrollTop = scrollZiel.current
+    scrollZiel.current = null
+  }, [stapel, layout])
+
   // Erneutes Tippen auf den aktiven Reiter führt ganz nach oben (bzw. schließt erst eine geöffnete Ansicht)
   const wechsleReiter = useCallback((r: Reiter) => {
     if (r === aktuell.current.reiter && aktuell.current.stapel.length === 1) {
       ansicht.current?.scrollTo({ top: 0, behavior: 'smooth' })
       return
     }
-    setReiter(r)
-    setStapel([START[r]])
-  }, [])
+    neuBeginnen(r, [START[r]])
+  }, [neuBeginnen])
 
   const wurzel = stapel[0]
   const oben = stapel[stapel.length - 1]
@@ -116,14 +245,22 @@ function Hauptansicht({ email }: { email: string }) {
   const nav = useMemo<Navigation>(
     () => ({
       // Breit: eine neue Ansicht ersetzt die rechte Seite; sonst liegt sie auf dem Stapel
-      geh: (a) => setStapel((s) => (breit ? [s[0], a] : [...s, a])),
-      ersetze: (a) => setStapel((s) => (s.length > 1 ? [...s.slice(0, -1), a] : [...s, a])),
-      zurueck: () => setStapel((s) => (s.length > 1 ? s.slice(0, -1) : s)),
+      geh: (a) => {
+        const s = aktuell.current.stapel
+        if (!breit) vorwaerts([...s, a])
+        else if (s.length > 1) ersetzeOben([s[0], a])
+        else vorwaerts([s[0], a])
+      },
+      ersetze: (a) => {
+        const s = aktuell.current.stapel
+        if (s.length > 1) ersetzeOben([...s.slice(0, -1), a])
+        else vorwaerts([...s, a])
+      },
+      zurueck,
       reiter: wechsleReiter,
       zurWoche: (datum) => {
         setWoche(wochenAbstand(datum, heute()))
-        setReiter('woche')
-        setStapel([START.woche])
+        neuBeginnen('woche', [START.woche])
       },
       woche,
       setWoche,
@@ -135,7 +272,7 @@ function Hauptansicht({ email }: { email: string }) {
       layout,
       detail,
     }),
-    [woche, wechsleReiter, stapel, lieder, uebungen, layout, breit, detail],
+    [woche, wechsleReiter, stapel, lieder, uebungen, layout, breit, detail, vorwaerts, ersetzeOben, zurueck, neuBeginnen],
   )
 
   function zeige(a: Ansicht) {
