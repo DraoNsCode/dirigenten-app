@@ -39,6 +39,7 @@ import FamilieSeite from './ansichten/FamilieSeite'
 import { InhaltProvider } from './themen/daten'
 import { ThemenAuswahlProvider } from './themen/auswahl'
 import ProbeAuswahl from './ansichten/ProbeAuswahl'
+import { useZurueckWischen, VERSATZ } from './wischen'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
@@ -222,6 +223,20 @@ function Hauptansicht({ email }: { email: string }) {
     return () => window.removeEventListener('popstate', beiPop)
   }, [])
 
+  // Zurück-Wischen auf iPhone/iPad: eigene Geste, die Leiste bleibt stehen (siehe wischen.tsx)
+  const layoutRef = useRef(layout)
+  layoutRef.current = layout
+  const { unterlage, unterlageRef, schleierRef } = useZurueckWischen({
+    kannZurueck: () => layoutRef.current !== 'breit' && aktuell.current.stapel.length > 1,
+    sperreLinks: () => layoutRef.current !== 'breit' && (aktuell.current.stapel.length > 1 || tiefe.current > 0),
+    ansicht,
+    zurueck,
+  })
+  // Die vorherige Ansicht unter der aktuellen dort zeigen, wo man sie verlassen hat
+  useLayoutEffect(() => {
+    if (unterlage && unterlageRef.current) unterlageRef.current.scrollTop = scrollMerker.current[tiefe.current - 1] ?? 0
+  }, [unterlage, unterlageRef])
+
   // Scrollstand nach dem Zurückgehen wiederherstellen (breit: die Liste links bleibt ohnehin stehen)
   useLayoutEffect(() => {
     if (scrollZiel.current == null) return
@@ -274,6 +289,12 @@ function Hauptansicht({ email }: { email: string }) {
     }),
     [woche, wechsleReiter, stapel, lieder, uebungen, layout, breit, detail, vorwaerts, ersetzeOben, zurueck, neuBeginnen],
   )
+
+  // Die Unterlage beim Zurück-Wischen zeigt die vorherige Ansicht genau so, wie sie nach dem Zurückgehen aussieht
+  const navUnten = useMemo<Navigation>(() => {
+    const n = stapel.length - 1
+    return { ...nav, detail: n > 1 ? stapel[n - 1] : undefined, vorher: n > 1 ? stapel[n - 2] : undefined }
+  }, [nav, stapel])
 
   function zeige(a: Ansicht) {
     switch (a.v) {
@@ -334,10 +355,27 @@ function Hauptansicht({ email }: { email: string }) {
             </BereichKontext.Provider>
           </>
         ) : (
-          /* key: neue Ansicht beginnt oben */
-          <main className="view" key={`${stapel.length}-${schluessel(oben)}`} ref={ansicht}>
-            <div className="inhalt">{zeige(oben)}</div>
-          </main>
+          <>
+            {/* key: neue Ansicht beginnt oben */}
+            <main className="view" key={`${stapel.length}-${schluessel(oben)}`} ref={ansicht}>
+              <div className="inhalt">{zeige(oben)}</div>
+            </main>
+            {unterlage && stapel.length > 1 && (
+              // Rahmen in der Größe der Ansicht: die versetzte Unterlage überdeckt nie die Leiste
+              <div className="unterlage-rahmen" style={unterlage} aria-hidden="true" inert>
+                <main
+                  className="view unterlage"
+                  ref={unterlageRef}
+                  style={{ transform: `translateX(${-VERSATZ * unterlage.width}px)` }}
+                >
+                  <NavKontext.Provider value={navUnten}>
+                    <div className="inhalt">{zeige(stapel[stapel.length - 2])}</div>
+                  </NavKontext.Provider>
+                </main>
+                <div className="wisch-schleier" ref={schleierRef} />
+              </div>
+            )}
+          </>
         )}
         {layout === 'schmal' && <Leiste aktiv={reiter} onWechsel={wechsleReiter} />}
       </div>

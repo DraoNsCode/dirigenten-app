@@ -320,6 +320,13 @@ textarea { width: 100%; min-height: 84px; padding: 10px 12px; border: 1px solid 
 .card.ereignis.aktiv { border-color: var(--brand); box-shadow: inset 3px 0 0 var(--gold); }
 .row.gewaehlt .title { color: var(--brand); font-weight: 600; }
 
+/* ---------- Zurück-Wischen auf iPhone/iPad (wischen.tsx): nur die Ansicht bewegt sich, die Leiste bleibt ---------- */
+html.wischt .app { overflow: hidden; }
+.view.wischt { position: relative; z-index: 3; background: var(--bg); box-shadow: -6px 0 18px rgba(0, 0, 0, .14); will-change: transform; }
+.unterlage-rahmen { position: fixed; z-index: 1; overflow: hidden; pointer-events: none; }
+.view.unterlage { position: absolute; inset: 0; overflow: hidden; background: var(--bg); will-change: transform; }
+.wisch-schleier { position: absolute; inset: 0; background: rgba(0, 0, 0, .12); }
+
 /* ---------- Wochenplan: Lieder ziehen ---------- */
 /* Langes Drücken soll weder Text markieren noch ein Menü öffnen */
 .card.ereignis .row { -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; }
