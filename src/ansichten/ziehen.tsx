@@ -1,31 +1,40 @@
 import { useCallback, useEffect, useRef, useState, type RefObject } from 'react'
-import type { Art } from '../kalender'
+import { RAND as WISCH_RAND } from '../wischen'
 
-// Lieder im Wochenplan ziehen und ablegen (Daniel, 16.11.2026):
-// - Finger: lange drücken (ohne zu bewegen), dann ziehen. Kurzes Antippen öffnet weiter das Lied,
-//   Wischen wechselt weiter die Woche, Scrollen bleibt normal.
+// Einträge in Listen ziehen und ablegen (Daniel, 16.11.2026) – im Wochenplan (Lieder in Probe und
+// Gottesdiensten) und in der Auswahl der Probenfolien:
+// - Finger: lange drücken (ohne zu bewegen), dann ziehen. Kurzes Antippen öffnet weiter den Eintrag,
+//   Scrollen bleibt normal.
 // - Maus: einfach ziehen.
-// - Innerhalb eines Termins umsortieren; zwischen Gottesdiensten verschieben; Probe nur in sich.
+// - Listen derselben Art nehmen einander Einträge ab (z. B. Gottesdienste untereinander); gesperrte nicht.
 // Während des Ziehens zeigt die Liste schon die neue Reihenfolge (Platzhalter), die gezogene Zeile
 // schwebt unter dem Finger. Am oberen und unteren Rand scrollt die Ansicht mit.
+//
+// Kennzeichnung im HTML: Liste = data-zug-liste (Kennung), data-zug-art, data-zug-gesperrt="ja";
+// Zeile = data-zug-zeile (Kennung des Eintrags).
 
-export type Zug = {
-  liedId: number
-  /** Termin, aus dem das Lied kommt */
+export type Zug<T extends string | number = string> = {
+  id: T
+  /** Liste, aus der der Eintrag kommt */
   von: string
-  art: Art
-  /** Termin, in dem es gerade landen würde (= von, wenn das Ziel nicht passt) */
+  art: string
+  /** Liste, in der er gerade landen würde (= von, wenn das Ziel nicht passt) */
   ziel: string
-  /** Stelle im Ziel, gezählt ohne das gezogene Lied */
+  /** Stelle im Ziel, gezählt ohne den gezogenen Eintrag */
   index: number
   startIndex: number
 }
 
-export type ZeilenInfo = { liedId: number; von: string; art: Art; startIndex: number }
+export type ZeilenInfo<T extends string | number = string> = { id: T; von: string; art: string; startIndex: number }
 
-type Geist = { top: number; left: number; width: number; liedId: number }
+export type Geist<T extends string | number = string> = { top: number; left: number; width: number; id: T }
 
-type Sitzung = ZeilenInfo & {
+export type Griff<T extends string | number = string> = (info: ZeilenInfo<T>) => {
+  onTouchStart: (e: React.TouchEvent<HTMLElement>) => void
+  onMouseDown: (e: React.MouseEvent<HTMLElement>) => void
+}
+
+type Sitzung<T extends string | number> = ZeilenInfo<T> & {
   geraet: 'finger' | 'maus'
   zeile: HTMLElement
   startX: number
@@ -47,13 +56,13 @@ const MAUS_SCHWELLE = 5
 const RAND = 64 // Randbereich, in dem mitgescrollt wird
 const TEMPO = 14 // höchstens so viele Pixel je Bild
 
-/** Liste eines Termins, wie sie während des Ziehens aussieht */
-export function vorschau(zug: Zug | null, evId: string, liste: number[]): number[] {
+/** Eine Liste, wie sie während des Ziehens aussieht */
+export function vorschau<T extends string | number>(zug: Zug<T> | null, listeId: string, liste: T[]): T[] {
   if (!zug) return liste
-  let l = evId === zug.von ? liste.filter((id) => id !== zug.liedId) : liste
-  if (evId === zug.ziel) {
+  let l = listeId === zug.von ? liste.filter((id) => id !== zug.id) : liste
+  if (listeId === zug.ziel) {
     l = [...l]
-    l.splice(Math.min(zug.index, l.length), 0, zug.liedId)
+    l.splice(Math.min(zug.index, l.length), 0, zug.id)
   }
   return l
 }
@@ -66,11 +75,11 @@ function scrollbarerVorfahr(el: HTMLElement): HTMLElement | null {
   return document.scrollingElement as HTMLElement | null
 }
 
-export function useZiehen(flaeche: RefObject<HTMLElement | null>, ablegen: (z: Zug) => void) {
-  const [zug, setZug] = useState<Zug | null>(null)
-  const [geist, setGeist] = useState<Geist | null>(null)
+export function useZiehen<T extends string | number>(flaeche: RefObject<HTMLElement | null>, ablegen: (z: Zug<T>) => void) {
+  const [zug, setZug] = useState<Zug<T> | null>(null)
+  const [geist, setGeist] = useState<Geist<T> | null>(null)
   const geistRef = useRef<HTMLDivElement>(null)
-  const sitzung = useRef<Sitzung | null>(null)
+  const sitzung = useRef<Sitzung<T> | null>(null)
   const zuletztGezogen = useRef(0)
   const letzteBeruehrung = useRef(0)
   const ablegenRef = useRef(ablegen)
@@ -90,33 +99,33 @@ export function useZiehen(flaeche: RefObject<HTMLElement | null>, ablegen: (z: Z
   }, [])
 
   const zielBestimmen = useCallback(
-    (s: Sitzung): { ziel: string; index: number } => {
+    (s: Sitzung<T>): { ziel: string; index: number } => {
       const heim = { ziel: s.von, index: s.startIndex }
       const wurzel = flaeche.current
       if (!wurzel) return heim
-      const karte = Array.from(wurzel.querySelectorAll<HTMLElement>('[data-ev]')).find((k) => {
+      const liste = Array.from(wurzel.querySelectorAll<HTMLElement>('[data-zug-liste]')).find((k) => {
         const r = k.getBoundingClientRect()
         return s.y >= r.top - 8 && s.y <= r.bottom + 8
       })
-      // Neben den Karten (Kopf, Hinweis unten, Lücke): bisheriges Ziel behalten
-      if (!karte) return { ziel: s.ziel, index: s.index }
-      // Über einem Termin, der nicht passt: zurück an den Ursprung
-      if (karte.dataset.art !== s.art || karte.dataset.gesperrt === 'ja') return heim
-      const zeilen = Array.from(karte.querySelectorAll<HTMLElement>('[data-lied]')).filter(
-        (z) => Number(z.dataset.lied) !== s.liedId,
+      // Neben den Listen (Kopf, Hinweis unten, Lücke): bisheriges Ziel behalten
+      if (!liste) return { ziel: s.ziel, index: s.index }
+      // Über einer Liste, die nicht passt: zurück an den Ursprung
+      if (liste.dataset.zugArt !== s.art || liste.dataset.zugGesperrt === 'ja') return heim
+      const zeilen = Array.from(liste.querySelectorAll<HTMLElement>('[data-zug-zeile]')).filter(
+        (z) => z.dataset.zugZeile !== String(s.id),
       )
       let index = 0
       for (const z of zeilen) {
         const r = z.getBoundingClientRect()
         if (r.top + r.height / 2 < s.y) index++
       }
-      return { ziel: karte.dataset.ev ?? s.von, index }
+      return { ziel: liste.dataset.zugListe ?? s.von, index }
     },
     [flaeche],
   )
 
   const aktualisieren = useCallback(
-    (s: Sitzung) => {
+    (s: Sitzung<T>) => {
       const { ziel, index } = zielBestimmen(s)
       if (ziel === s.ziel && index === s.index) return
       s.ziel = ziel
@@ -127,7 +136,7 @@ export function useZiehen(flaeche: RefObject<HTMLElement | null>, ablegen: (z: Z
   )
 
   const bewegen = useCallback(
-    (s: Sitzung, x: number, y: number) => {
+    (s: Sitzung<T>, x: number, y: number) => {
       s.x = x
       s.y = y
       if (geistRef.current) geistRef.current.style.transform = `translateY(${y - s.startY}px)`
@@ -138,7 +147,7 @@ export function useZiehen(flaeche: RefObject<HTMLElement | null>, ablegen: (z: Z
 
   // Am Rand mitscrollen, solange gezogen wird
   const mitscrollen = useCallback(
-    (s: Sitzung) => {
+    (s: Sitzung<T>) => {
       const schritt = () => {
         if (sitzung.current !== s || !s.aktiv) return
         const sc = s.scroller
@@ -163,13 +172,13 @@ export function useZiehen(flaeche: RefObject<HTMLElement | null>, ablegen: (z: Z
   )
 
   const aktivieren = useCallback(
-    (s: Sitzung) => {
+    (s: Sitzung<T>) => {
       if (sitzung.current !== s || s.aktiv) return
       s.aktiv = true
       s.scroller = scrollbarerVorfahr(s.zeile)
       const r = s.zeile.getBoundingClientRect()
-      setGeist({ top: r.top, left: r.left, width: r.width, liedId: s.liedId })
-      setZug({ liedId: s.liedId, von: s.von, art: s.art, ziel: s.von, index: s.startIndex, startIndex: s.startIndex })
+      setGeist({ top: r.top, left: r.left, width: r.width, id: s.id })
+      setZug({ id: s.id, von: s.von, art: s.art, ziel: s.von, index: s.startIndex, startIndex: s.startIndex })
       document.documentElement.classList.add('zieht')
       window.getSelection?.()?.removeAllRanges()
       if (s.geraet === 'finger') navigator.vibrate?.(12)
@@ -178,7 +187,7 @@ export function useZiehen(flaeche: RefObject<HTMLElement | null>, ablegen: (z: Z
     [mitscrollen],
   )
 
-  const beenden = useCallback((s: Sitzung, absetzen: boolean) => {
+  const beenden = useCallback((s: Sitzung<T>, absetzen: boolean) => {
     if (sitzung.current !== s) return
     sitzung.current = null
     window.clearTimeout(s.timer)
@@ -197,12 +206,12 @@ export function useZiehen(flaeche: RefObject<HTMLElement | null>, ablegen: (z: Z
     setZug(null)
     setGeist(null)
     if (absetzen)
-      ablegenRef.current({ liedId: s.liedId, von: s.von, art: s.art, ziel: s.ziel, index: s.index, startIndex: s.startIndex })
+      ablegenRef.current({ id: s.id, von: s.von, art: s.art, ziel: s.ziel, index: s.index, startIndex: s.startIndex })
   }, [])
 
   const starten = useCallback(
-    (info: ZeilenInfo, geraet: Sitzung['geraet'], zeile: HTMLElement, ziel: EventTarget, x: number, y: number) => {
-      const s: Sitzung = {
+    (info: ZeilenInfo<T>, geraet: Sitzung<T>['geraet'], zeile: HTMLElement, ziel: EventTarget, x: number, y: number) => {
+      const s: Sitzung<T> = {
         ...info,
         geraet,
         zeile,
@@ -282,13 +291,15 @@ export function useZiehen(flaeche: RefObject<HTMLElement | null>, ablegen: (z: Z
   )
 
   /** Ereignis-Empfänger für eine Zeile */
-  const griff = useCallback(
-    (info: ZeilenInfo) => ({
+  const griff: Griff<T> = useCallback(
+    (info: ZeilenInfo<T>) => ({
       onTouchStart: (e: React.TouchEvent<HTMLElement>) => {
         letzteBeruehrung.current = Date.now()
         if (sitzung.current || e.touches.length !== 1) return
         if ((e.target as Element).closest('.xbtn')) return
         const p = e.touches[0]
+        // Am linken Rand beginnt das Zurück-Wischen (wischen.tsx), nicht das Ziehen
+        if (p.clientX < WISCH_RAND) return
         starten(info, 'finger', e.currentTarget, e.target, p.clientX, p.clientY)
       },
       onMouseDown: (e: React.MouseEvent<HTMLElement>) => {

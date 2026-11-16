@@ -15,7 +15,7 @@ export const IST_IOS =
   typeof navigator !== 'undefined' &&
   (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
 
-const RAND = 24 // Breite des Randstreifens, in dem die Geste beginnt
+export const RAND = 24 // Breite des Randstreifens, in dem die Geste beginnt
 const SCHWELLE = 10 // ab dieser Bewegung ist es kein Antippen mehr
 export const VERSATZ = 0.3 // so weit liegt die vorherige Ansicht anfangs nach links versetzt (Anteil der Breite)
 const DAUER = 260 // ms für das Ein- bzw. Zurückfedern

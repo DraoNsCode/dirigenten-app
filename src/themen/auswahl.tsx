@@ -6,7 +6,8 @@ import { wahlSchluessel, type Wahl } from './folie'
 // Von einer Familie lassen sich mehrere Stufen zugleich auswählen (Daniel, 14.11.2026).
 // Sie ist kein Probenplan und liegt nur auf diesem Gerät, bis sie geleert wird; getrennt von der Auswahl der
 // bisherigen Übungssammlung. Neu Ausgewähltes kommt an seinen Platz in der Reihenfolge der Liste
-// (Phase, Familie, Grundübung vor den Stufen); mit den Pfeilen lässt sich die Reihenfolge danach ändern.
+// (Phase, Familie, Grundübung vor den Stufen); danach lässt sich die Reihenfolge per Ziehen ändern
+// (Daniel, 16.11.2026: wie im Wochenplan, ohne Pfeile).
 
 const SPEICHER_SCHLUESSEL = 'dirigenten-themen-auswahl'
 
@@ -21,7 +22,8 @@ type Kontext = {
   entfernen: (schluessel: string) => void
   /** Nimmt alle Einheiten einer Familie aus der Auswahl */
   familieEntfernen: (familie: string) => void
-  verschieben: (schluessel: string, richtung: -1 | 1) => void
+  /** Neue Reihenfolge setzen (nach dem Ziehen); nur vorhandene Schlüssel, fehlende bleiben hinten */
+  ordnen: (reihenfolge: string[]) => void
   leeren: () => void
 }
 
@@ -80,22 +82,18 @@ export function ThemenAuswahlProvider({ children }: { children: ReactNode }) {
   const entfernen = useCallback((s: string) => setSchluessel((alt) => alt.filter((x) => x !== s)), [])
   const familieEntfernen = useCallback((familie: string) => setSchluessel((alt) => alt.filter((x) => !x.startsWith(familie + '/'))), [])
 
-  const verschieben = useCallback((s: string, richtung: -1 | 1) => {
+  const ordnen = useCallback((reihenfolge: string[]) => {
     setSchluessel((alt) => {
-      const i = alt.indexOf(s)
-      const j = i + richtung
-      if (i < 0 || j < 0 || j >= alt.length) return alt
-      const neu = [...alt]
-      ;[neu[i], neu[j]] = [neu[j], neu[i]]
-      return neu
+      const neu = reihenfolge.filter((s) => alt.includes(s))
+      return [...neu, ...alt.filter((s) => !neu.includes(s))]
     })
   }, [])
 
   const leeren = useCallback(() => setSchluessel([]), [])
 
   const wert = useMemo(
-    () => ({ schluessel, enthaelt, vonFamilie, umschalten, entfernen, familieEntfernen, verschieben, leeren }),
-    [schluessel, enthaelt, vonFamilie, umschalten, entfernen, familieEntfernen, verschieben, leeren],
+    () => ({ schluessel, enthaelt, vonFamilie, umschalten, entfernen, familieEntfernen, ordnen, leeren }),
+    [schluessel, enthaelt, vonFamilie, umschalten, entfernen, familieEntfernen, ordnen, leeren],
   )
   return <AuswahlKontext.Provider value={wert}>{children}</AuswahlKontext.Provider>
 }
