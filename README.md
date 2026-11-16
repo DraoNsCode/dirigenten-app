@@ -13,6 +13,7 @@ Web-App für die Dirigenten des Gemeindechors: Probenplanung, gesungene Lieder i
 | Daten | Supabase (Projekt `ogajbvuvehudedkdhadx`, Frankfurt) | Lieder, Kategorien, Einträge, Hinweise; Zugriff nur für angemeldete Konten |
 | Noten | Supabase Storage, privater Speicher `noten` | eine PDF pro Lied |
 | Übungen und Einsingen | Supabase Storage, privater Speicher `uebungen` | `dirigenten-inhalt.json` (Themenseiten und Familien von Übungen) aus dem privaten Repo `dirigenten-app-uebungen`; dessen Ablauf „In die Dirigenten-App laden“ baut und lädt sie bei jeder Änderung auf `main` hoch. Der Reiter „Übungen“ zeigt sie zum Lesen und Vorbereiten, der Reiter „Einsingen“ zum Auswählen und als Probenfolien (PDF). Die App liest nur. |
+| Gemeindelogo | Supabase Storage, privater Speicher `uebungen` | `logo-gemeinde.png` für die Deckfolie der Probenfolien; liegt im privaten Repo `dirigenten-app-uebungen` (`bilder/`), dessen Ablauf es mit hochlädt – bewusst nicht in diesem öffentlichen Repo. |
 | Bisherige Übungssammlung | Supabase Storage, privater Speicher `uebungen` | `uebungen.json` und `grafiken.json` aus dem privaten Repo `chor-uebungen`. Übergangsweise über das Menü erreichbar. |
 
 Im Code stehen nur die Projektadresse und der **öffentliche** Schlüssel von Supabase. Der geheime Schlüssel gehört nie in dieses Repo.

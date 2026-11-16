@@ -7,7 +7,8 @@ import cormorant600 from './schriften/cormorant-garamond-600.ttf?url'
 import barlowSchmal600 from './schriften/barlow-condensed-600.ttf?url'
 import { ladeAbcjs } from '../uebungen/Noten'
 import { KURZ_APP, notenZeichnen, type Abcjs } from './zeichnen'
-import type { Folie } from './folie'
+import { naechsteProbe, type Folie } from './folie'
+import { ladeLogo, type Logo } from './logo'
 
 // Folien fürs Einsingen als PDF (16:9). Eine Folie je ausgewählter Grundübung oder Stufe: oben links der Folientitel, darüber die Dachzeile
 // mit der Phase, darunter die Noten, eine Textzeile (mittig) oder Stichpunkte (linksbündig am linken Rand);
@@ -15,6 +16,9 @@ import type { Folie } from './folie'
 // System aus der Gemeinde-Vorlage abgeleitet (helles Design, Variante B): Hellgrund, Dunkeltext,
 // Titel in Cormorant Garamond an der Stelle der Überschrift der Vorlage, Dachzeile und Fußzeile in Barlow Condensed.
 // Größen: Daniel, 11.11.2026 (Titel 37, Stichpunkte 26, Dachzeile 12, Fußzeile 10, Noten höchstens 1,6-fach).
+//
+// Vor den Übungen steht immer eine Deckfolie nach der Titelfolie der Gemeinde-Vorlage (helle Variante):
+// Logo, Datum der Probe, Titel „Chorprobe“, Goldstrich (Daniel, 16.11.2026).
 //
 // Seit 14.11.2026 gilt die Gestaltung „gleich groß“ (siehe folieGleichGross): gleicher Aufbau, aber die Noten sind auf
 // jeder Folie gleich groß und Text ohne Noten steht größer. Die Fassung vom 11.11. bleibt als 'titel-oben' erhalten.
@@ -263,6 +267,59 @@ async function folieGleichGross(
   vermerkZeichnen(doc, vermerk)
 }
 
+// ---------- Deckfolie ----------
+
+export type Deckfolie = { titel: string; datum: Date }
+
+/** „DONNERSTAG, 19. NOVEMBER 2026“ */
+const datumZeile = (d: Date) =>
+  d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }).toLocaleUpperCase('de')
+
+/**
+ * Titelfolie der Gemeinde-Vorlage, helle Variante (Folie „titel“ in „Folienvorlage Baptistengemeinde Hanau“),
+ * von 1920 × 1080 auf 960 × 540 halbiert: mittig untereinander Logo (220 × 107,5), Dachzeile (Barlow Condensed 12,
+ * gesperrt, Goldbraun), Titel (Cormorant Garamond 56), Goldstrich (40 × 1); Abstand 20. Die Zeile für Untertitel
+ * oder Redner bleibt weg.
+ */
+function deckfolieZeichnen(doc: JsPDF, d: Deckfolie, logo: Logo | null) {
+  doc.setFillColor(FARBE.grund)
+  doc.rect(0, 0, B, H, 'F')
+  const ABSTAND = 20
+  const LOGO = { b: 220, h: 107.5 }
+  const DACH = { groesse: 12, sperrung: 2, hoehe: 12 * 1.2 }
+  const TITEL_GROESSE = 56
+  const titelHoehe = TITEL_GROESSE * 1.05
+  const hoehe = (logo ? LOGO.h + ABSTAND : 0) + DACH.hoehe + ABSTAND + titelHoehe + ABSTAND + 1
+  let y = (H - hoehe) / 2
+
+  if (logo) {
+    // Seitenverhältnis behalten (wie object-fit: contain)
+    const f = Math.min(LOGO.b / logo.breite, LOGO.h / logo.hoehe)
+    const b = logo.breite * f
+    const h = logo.hoehe * f
+    doc.addImage(logo.daten, 'PNG', (B - b) / 2, y + (LOGO.h - h) / 2, b, h, 'logo', 'SLOW')
+    y += LOGO.h + ABSTAND
+  }
+
+  const zeile = datumZeile(d.datum)
+  doc.setFont(SCHMAL, 'normal')
+  doc.setFontSize(DACH.groesse)
+  doc.setTextColor(FARBE.goldbraun)
+  // Mit Sperrung selbst mitteln (jsPDF rechnet die Sperrung beim Zentrieren nicht mit)
+  const breite = doc.getTextWidth(zeile) + DACH.sperrung * (zeile.length - 1)
+  doc.text(zeile, (B - breite) / 2, y + DACH.hoehe / 2, { baseline: 'middle', charSpace: DACH.sperrung })
+  y += DACH.hoehe + ABSTAND
+
+  doc.setFont(TITEL, 'normal')
+  doc.setFontSize(passend(doc, d.titel, B - 2 * RAND, TITEL_GROESSE, 36))
+  doc.setTextColor(FARBE.tinte)
+  doc.text(d.titel, B / 2, y + titelHoehe / 2, { align: 'center', baseline: 'middle' })
+  y += titelHoehe + ABSTAND
+
+  doc.setFillColor(FARBE.gold)
+  doc.rect((B - 40) / 2, y, 40, 1, 'F')
+}
+
 /** Nur in Vergleichs-PDFs: welche Fassung diese Seite zeigt */
 function vermerkZeichnen(doc: JsPDF, vermerk: string | undefined) {
   if (!vermerk) return
@@ -299,14 +356,22 @@ async function folieZeichnen(
 export type Gestaltung = 'titel-oben' | 'gleich-gross'
 type Variante = { groessen: Groessen; struktur?: Struktur; vermerk?: string; gestaltung?: Gestaltung }
 
-/** Erzeugt die Folien als PDF; `fortschritt` meldet „Folie n von m“ */
+/** Erzeugt die Folien als PDF, vorneweg die Deckfolie; `fortschritt` meldet „Folie n von m“ */
 export async function folienPdf(
   liste: Folie[],
   fortschritt?: (n: number, m: number) => void,
   /** Nur zum Vergleichen: jede Folie in mehreren Fassungen, mit Vermerk */
   varianten: Variante[] = [{ groessen: GROESSEN, struktur: STRUKTUR }],
+  deckfolie: Deckfolie = { titel: 'Chorprobe', datum: naechsteProbe() },
 ): Promise<Blob> {
-  const [{ jsPDF }, { svg2pdf }, abcjs, schriften] = await Promise.all([import('jspdf'), import('svg2pdf.js'), ladeAbcjs(), ladeSchriften()])
+  const [{ jsPDF }, { svg2pdf }, abcjs, schriften, logo] = await Promise.all([
+    import('jspdf'),
+    import('svg2pdf.js'),
+    ladeAbcjs(),
+    ladeSchriften(),
+    // Ohne Logo (z. B. keine Verbindung) entsteht die Deckfolie trotzdem
+    ladeLogo().catch(() => null),
+  ])
   const folien = liste.flatMap((f) => varianten.map((v) => ({ f, ...v })))
   if (!folien.length) throw new Error('Keine Folien')
 
@@ -320,9 +385,12 @@ export async function folienPdf(
   halter.setAttribute('aria-hidden', 'true')
   document.body.append(halter)
   try {
+    const m = folien.length + 1
+    fortschritt?.(1, m)
+    deckfolieZeichnen(doc, deckfolie, logo)
     for (let i = 0; i < folien.length; i++) {
-      if (i > 0) doc.addPage([B, H], 'landscape')
-      fortschritt?.(i + 1, folien.length)
+      doc.addPage([B, H], 'landscape')
+      fortschritt?.(i + 2, m)
       const zeichne = folien[i].gestaltung === 'titel-oben' ? folieZeichnen : folieGleichGross
       await zeichne(doc, folien[i].f, folien[i].groessen, folien[i].struktur ?? {}, folien[i].vermerk, { svg2pdf, abcjs, halter })
       halter.replaceChildren()
