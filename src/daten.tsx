@@ -1,13 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { supabase } from './supabase'
 import type { Zeile } from './datenbank.types'
-import { ereignisId, heute, type Ereignis } from './kalender'
+import { ereignisId, ereignisseDerWoche, heute, montagVon, terminKurz, type Ereignis } from './kalender'
 import { useMeldung } from './meldung'
 
 export type Lied = Zeile<'lieder'>
 export type Thema = Zeile<'kategorien'>
 export type Person = Zeile<'dirigenten'>
-export type Eintrag = Pick<Zeile<'eintraege'>, 'datum' | 'termin' | 'lied_id' | 'erstellt_am'>
+export type Eintrag = Pick<Zeile<'eintraege'>, 'datum' | 'termin' | 'lied_id' | 'erstellt_am' | 'reihenfolge'>
 
 export type LiedAenderung = Partial<Pick<Lied, 'status' | 'dirigent_id' | 'klavierspieler_id'>>
 
@@ -44,7 +44,7 @@ type DatenKontext = {
   themen: Thema[]
   dirigenten: Person[]
   klavierspieler: Person[]
-  /** Lied-IDs je Ereignis-Kennung, in der Reihenfolge des Eintragens */
+  /** Lied-IDs je Ereignis-Kennung, in der gespeicherten Reihenfolge (im Wochenplan per Ziehen änderbar) */
   proEreignis: Map<string, number[]>
   /** Ereignis-Kennungen, zu denen es Einträge gibt */
   ereignisIds: string[]
@@ -54,6 +54,11 @@ type DatenKontext = {
   eintragen: (ev: Ereignis, liedId: number) => Promise<boolean>
   entfernen: (ev: Ereignis, liedId: number) => Promise<boolean>
   uebernehmen: (ev: Ereignis, liedIds: number[]) => Promise<number>
+  /** Lied innerhalb eines Termins umsortieren oder in einen anderen Termin derselben Art verschieben;
+   *  reihenfolge = alle Lieder des Zieltermins in der neuen Reihenfolge */
+  ablegen: (liedId: number, von: Ereignis, nach: Ereignis, reihenfolge: number[]) => Promise<boolean>
+  /** Anderer Gottesdienst derselben Woche, in dem das Lied schon steht (bei Proben nie) */
+  schonInDerWoche: (ev: Ereignis, liedId: number) => Ereignis | undefined
   /** In der App änderbare Angaben eines Liedes: Status, Dirigent, Klavierspieler */
   aendereLied: (liedId: number, aenderung: LiedAenderung) => Promise<boolean>
   /** Anzahl offener Hinweise eines Liedes nach Änderungen auf der Lied-Seite */
@@ -81,7 +86,7 @@ async function alleEintraege(): Promise<Eintrag[]> {
   for (let von = 0; ; von += SEITE) {
     const { data, error } = await supabase
       .from('eintraege')
-      .select('datum, termin, lied_id, erstellt_am')
+      .select('datum, termin, lied_id, erstellt_am, reihenfolge')
       .order('erstellt_am')
       .order('id')
       .range(von, von + SEITE - 1)
@@ -145,15 +150,35 @@ export function DatenProvider({ children }: { children: ReactNode }) {
   const lieder = useMemo(() => new Map(liederListe.map((l) => [l.id, l])), [liederListe])
 
   const proEreignis = useMemo(() => {
-    const m = new Map<string, number[]>()
+    const gruppen = new Map<string, Eintrag[]>()
     for (const e of eintraege) {
       const id = ereignisId(e.datum, e.termin)
-      const liste = m.get(id)
-      if (liste) liste.push(e.lied_id)
-      else m.set(id, [e.lied_id])
+      const liste = gruppen.get(id)
+      if (liste) liste.push(e)
+      else gruppen.set(id, [e])
+    }
+    const m = new Map<string, number[]>()
+    for (const [id, liste] of gruppen) {
+      liste.sort((a, b) => a.reihenfolge - b.reihenfolge || a.erstellt_am.localeCompare(b.erstellt_am))
+      m.set(id, liste.map((e) => e.lied_id))
     }
     return m
   }, [eintraege])
+
+  // Ein Lied steht in einer Woche höchstens in einem Gottesdienst (Daniel, 16.11.2026)
+  const schonInDerWoche = useCallback(
+    (ev: Ereignis, liedId: number) =>
+      ev.art !== 'gd'
+        ? undefined
+        : ereignisseDerWoche(montagVon(ev.datum)).find(
+            (e) => e.art === 'gd' && e.id !== ev.id && (proEreignis.get(e.id) ?? []).includes(liedId),
+          ),
+    [proEreignis],
+  )
+
+  /** Nächste freie Position in einem Termin */
+  const naechstePosition = (ev: Ereignis) =>
+    eintraege.reduce((max, e) => (e.datum === ev.iso && e.termin === ev.termin ? Math.max(max, e.reihenfolge + 1) : max), 0)
 
   const ereignisIds = useMemo(() => Array.from(proEreignis.keys()), [proEreignis])
 
@@ -173,9 +198,16 @@ export function DatenProvider({ children }: { children: ReactNode }) {
   const eintragen = useCallback(
     async (ev: Ereignis, liedId: number) => {
       if (proEreignis.get(ev.id)?.includes(liedId)) return true
-      const neu: Eintrag = { datum: ev.iso, termin: ev.termin, lied_id: liedId, erstellt_am: new Date().toISOString() }
+      const belegt = schonInDerWoche(ev, liedId)
+      if (belegt) {
+        const l = lieder.get(liedId)
+        zeige(`${l ? kennung(l) : 'Lied'} ist schon ${terminKurz(belegt)} eingetragen`)
+        return false
+      }
+      const reihenfolge = naechstePosition(ev)
+      const neu: Eintrag = { datum: ev.iso, termin: ev.termin, lied_id: liedId, erstellt_am: new Date().toISOString(), reihenfolge }
       setEintraege((alt) => [...alt, neu])
-      const { error } = await supabase.from('eintraege').insert({ datum: ev.iso, termin: ev.termin, lied_id: liedId })
+      const { error } = await supabase.from('eintraege').insert({ datum: ev.iso, termin: ev.termin, lied_id: liedId, reihenfolge })
       if (error && !istDoppelt(error)) {
         setEintraege((alt) => alt.filter((x) => x !== neu))
         zeige('Nicht gespeichert – keine Verbindung?')
@@ -183,7 +215,7 @@ export function DatenProvider({ children }: { children: ReactNode }) {
       }
       return true
     },
-    [proEreignis, zeige],
+    [proEreignis, schonInDerWoche, lieder, eintraege, zeige],
   )
 
   const entfernen = useCallback(
@@ -209,17 +241,19 @@ export function DatenProvider({ children }: { children: ReactNode }) {
   const uebernehmen = useCallback(
     async (ev: Ereignis, liedIds: number[]) => {
       const schon = new Set(proEreignis.get(ev.id) ?? [])
-      const offen = liedIds.filter((id) => !schon.has(id))
+      const offen = liedIds.filter((id) => !schon.has(id) && !schonInDerWoche(ev, id))
       if (!offen.length) return 0
       const jetzt = Date.now()
+      const ab = naechstePosition(ev)
       const neu: Eintrag[] = offen.map((id, i) => ({
         datum: ev.iso,
         termin: ev.termin,
         lied_id: id,
         erstellt_am: new Date(jetzt + i).toISOString(),
+        reihenfolge: ab + i,
       }))
       setEintraege((alt) => [...alt, ...neu])
-      const zeilen = offen.map((id) => ({ datum: ev.iso, termin: ev.termin, lied_id: id }))
+      const zeilen = offen.map((id, i) => ({ datum: ev.iso, termin: ev.termin, lied_id: id, reihenfolge: ab + i }))
       let { error } = await supabase.from('eintraege').insert(zeilen)
       if (istDoppelt(error)) {
         // Der andere Dirigent hat inzwischen etwas eingetragen: einzeln versuchen
@@ -236,7 +270,43 @@ export function DatenProvider({ children }: { children: ReactNode }) {
       }
       return offen.length
     },
-    [proEreignis, zeige],
+    [proEreignis, schonInDerWoche, eintraege, zeige],
+  )
+
+  const ablegen = useCallback(
+    async (liedId: number, von: Ereignis, nach: Ereignis, reihenfolge: number[]) => {
+      const vorher = eintraege
+      const position = new Map(reihenfolge.map((id, i) => [id, i]))
+      setEintraege((alt) =>
+        alt.map((e) => {
+          let x = e
+          if (e.datum === von.iso && e.termin === von.termin && e.lied_id === liedId)
+            x = { ...x, datum: nach.iso, termin: nach.termin }
+          if (x.datum === nach.iso && x.termin === nach.termin)
+            x = { ...x, reihenfolge: position.get(x.lied_id) ?? reihenfolge.length + x.reihenfolge }
+          return x
+        }),
+      )
+      const { error } = await supabase.rpc('eintrag_ablegen', {
+        lied: liedId,
+        von_datum: von.iso,
+        von_termin: von.termin,
+        nach_datum: nach.iso,
+        nach_termin: nach.termin,
+        lieder: reihenfolge,
+      })
+      if (error) {
+        setEintraege(vorher)
+        if (error.code === 'P0002' || istDoppelt(error)) {
+          // Der andere Dirigent hat inzwischen etwas geändert
+          zeige('Inzwischen geändert – Wochenplan neu geladen')
+          neuLaden()
+        } else zeige('Nicht gespeichert – keine Verbindung?')
+        return false
+      }
+      return true
+    },
+    [eintraege, zeige, neuLaden],
   )
 
   const aendereLied = useCallback(
@@ -340,6 +410,8 @@ export function DatenProvider({ children }: { children: ReactNode }) {
     eintragen,
     entfernen,
     uebernehmen,
+    ablegen,
+    schonInDerWoche,
     aendereLied,
     setzeOffeneHinweise,
     liedAnlegen,

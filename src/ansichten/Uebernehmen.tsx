@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from 'react'
 import { Kopf, Zurueck } from '../bausteine'
 import { kennung, useDaten } from '../daten'
-import { ereignisAusId, ereignisseDerWoche, ereignisTitel, kurzDatum, montagVon } from '../kalender'
+import { ereignisAusId, ereignisseDerWoche, ereignisTitel, kurzDatum, montagVon, terminKurz } from '../kalender'
 import { useMeldung } from '../meldung'
 import { useNav } from '../navigation'
 
@@ -16,9 +16,15 @@ export default function Uebernehmen({ evId }: { evId: string }) {
   const probenLieder = probe ? daten.proEreignis.get(probe.id) ?? [] : []
   const schonDrin = new Set(daten.proEreignis.get(ev.id) ?? [])
 
-  // Vorausgewählt: erlernte Lieder, die noch nicht eingetragen sind
+  // Ein Lied steht in einer Woche höchstens in einem Gottesdienst (Daniel, 16.11.2026)
+  const belegt = (id: number) => (schonDrin.has(id) ? undefined : daten.schonInDerWoche(ev, id))
+
+  // Vorausgewählt: erlernte Lieder, die in dieser Woche noch in keinem Gottesdienst stehen
   const [gewaehlt, setGewaehlt] = useState<Set<number>>(
-    () => new Set(probenLieder.filter((id) => !schonDrin.has(id) && daten.lieder.get(id)?.status === 'erlernt')),
+    () =>
+      new Set(
+        probenLieder.filter((id) => !schonDrin.has(id) && !belegt(id) && daten.lieder.get(id)?.status === 'erlernt'),
+      ),
   )
   const [laeuft, setLaeuft] = useState(false)
 
@@ -56,14 +62,21 @@ export default function Uebernehmen({ evId }: { evId: string }) {
             const l = daten.lieder.get(id)
             if (!l) return null
             const drin = schonDrin.has(id)
+            const anderswo = belegt(id)
             const erlernt = l.status === 'erlernt'
-            const zusatz = drin ? 'bereits eingetragen' : erlernt ? '' : 'noch nicht erlernt'
+            const zusatz = drin
+              ? 'bereits eingetragen'
+              : anderswo
+                ? `schon ${terminKurz(anderswo)} eingetragen`
+                : erlernt
+                  ? ''
+                  : 'noch nicht erlernt'
             return (
-              <label key={id} className={'checkrow' + (erlernt && !drin ? '' : ' dim')}>
+              <label key={id} className={'checkrow' + (erlernt && !drin && !anderswo ? '' : ' dim')}>
                 <input
                   type="checkbox"
-                  checked={drin || gewaehlt.has(id)}
-                  disabled={drin || !erlernt}
+                  checked={drin || (!anderswo && gewaehlt.has(id))}
+                  disabled={drin || !!anderswo || !erlernt}
                   onChange={() => umschalten(id)}
                 />
                 <span className="num">{kennung(l)}</span>

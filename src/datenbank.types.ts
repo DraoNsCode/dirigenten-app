@@ -27,6 +27,8 @@ export type Database = {
           erstellt_am: string
           id: number
           lied_id: number
+          /** Position im Termin, ab 0; ohne Angabe vergibt die Datenbank die nächste freie */
+          reihenfolge: number
           termin: string
         }
         Insert: {
@@ -34,6 +36,7 @@ export type Database = {
           erstellt_am?: string
           id?: never
           lied_id: number
+          reihenfolge?: number
           termin: string
         }
         Update: {
@@ -41,6 +44,7 @@ export type Database = {
           erstellt_am?: string
           id?: never
           lied_id?: number
+          reihenfolge?: number
           termin?: string
         }
         Relationships: [
@@ -184,6 +188,17 @@ export type Database = {
     }
     Views: { [_ in never]: never }
     Functions: {
+      eintrag_ablegen: {
+        Args: {
+          lied: number
+          von_datum: string
+          von_termin: string
+          nach_datum: string
+          nach_termin: string
+          lieder: number[]
+        }
+        Returns: undefined
+      }
       lied_loeschen: {
         Args: { lied: number }
         Returns: string | null

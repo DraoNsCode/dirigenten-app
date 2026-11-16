@@ -1,12 +1,16 @@
-import { useRef } from 'react'
+import { useRef, type RefObject } from 'react'
 import { Fehlerkarte, HinweisMarke, Kopf } from '../bausteine'
 import { kennung, useDaten } from '../daten'
-import { ereignisseDerWoche, ereignisTitel, heute, montagVon, plusTage, wochenTitel, type Ereignis } from '../kalender'
+import { ereignisseDerWoche, ereignisTitel, heute, montagVon, plusTage, terminKurz, wochenTitel, type Ereignis } from '../kalender'
 import { useMeldung } from '../meldung'
 import { useNav } from '../navigation'
 import { Kreuz, Links, Plus, Rechts, Uebernehmen } from '../symbole'
+import { useZiehen, vorschau, type Zug, type ZeilenInfo } from './ziehen'
 
 // Startseite „Wochenplan“: alle Termine einer Woche in Datumsreihenfolge.
+// Lieder lassen sich per Ziehen umsortieren und zwischen Gottesdiensten verschieben (siehe ziehen.tsx).
+
+const fingerGeraet = () => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
 
 export default function Woche() {
   const nav = useNav()
@@ -15,6 +19,22 @@ export default function Woche() {
   const ereignisse = ereignisseDerWoche(montag)
   const probe = ereignisse.find((e) => e.art === 'pr')
   const probenLieder = probe ? daten.proEreignis.get(probe.id) ?? [] : []
+  const zeige = useMeldung()
+
+  const flaeche = useRef<HTMLDivElement>(null)
+  const { zug, geist, geistRef, griff, ziehtGerade } = useZiehen(flaeche, absetzen)
+
+  async function absetzen(z: Zug) {
+    const von = ereignisse.find((e) => e.id === z.von)
+    const nach = ereignisse.find((e) => e.id === z.ziel)
+    if (!von || !nach) return
+    const alt = daten.proEreignis.get(nach.id) ?? []
+    const neu = vorschau(z, nach.id, alt)
+    if (von.id === nach.id && neu.every((id, i) => id === alt[i])) return
+    const ok = await daten.ablegen(z.liedId, von, nach, neu)
+    const l = daten.lieder.get(z.liedId)
+    if (ok && von.id !== nach.id) zeige(`${l ? kennung(l) : 'Lied'} nach ${terminKurz(nach)} verschoben`)
+  }
 
   // Wischen wechselt die Woche
   const start = useRef<{ x: number; y: number } | null>(null)
@@ -24,6 +44,10 @@ export default function Woche() {
   }
   const beiEnde = (e: React.TouchEvent) => {
     if (!start.current) return
+    if (ziehtGerade()) {
+      start.current = null
+      return
+    }
     const t = e.changedTouches[0]
     const dx = t.clientX - start.current.x, dy = t.clientY - start.current.y
     start.current = null
@@ -45,23 +69,57 @@ export default function Woche() {
   )
 
   return (
-    <div className="wischflaeche" onTouchStart={beiStart} onTouchEnd={beiEnde}>
+    <div className="wischflaeche" ref={flaeche} onTouchStart={beiStart} onTouchEnd={beiEnde}>
       <Kopf eyebrow={wochenTitel(montag)} titel="Wochenplan" rechts={wochenwahl} />
       {daten.stand.art === 'laedt' && <p className="note">Lädt …</p>}
       {daten.stand.art === 'fehler' && <Fehlerkarte text={daten.stand.text} nochmal={daten.neuLaden} />}
       {daten.stand.art === 'bereit' &&
-        ereignisse.map((ev) => <Termin key={ev.id} ev={ev} probenLieder={probenLieder} />)}
-      <p className="note">Wischen wechselt die Woche.</p>
+        ereignisse.map((ev) => (
+          <Termin key={ev.id} ev={ev} probenLieder={probenLieder} zug={zug} griff={griff} />
+        ))}
+      <p className="note">
+        {fingerGeraet()
+          ? 'Wischen wechselt die Woche. Lange drücken, um ein Lied zu verschieben.'
+          : 'Lieder lassen sich mit der Maus verschieben.'}
+      </p>
+      {geist && <Geist geist={geist} geistRef={geistRef} />}
     </div>
   )
 }
 
-function Termin({ ev, probenLieder }: { ev: Ereignis; probenLieder: number[] }) {
+/** Die gezogene Zeile, die unter Finger oder Maus schwebt */
+function Geist({ geist, geistRef }: { geist: { top: number; left: number; width: number; liedId: number }; geistRef: RefObject<HTMLDivElement | null> }) {
+  const daten = useDaten()
+  const l = daten.lieder.get(geist.liedId)
+  if (!l) return null
+  return (
+    <div
+      ref={geistRef}
+      className="zug-geist"
+      aria-hidden="true"
+      style={{ top: geist.top, left: geist.left - 12, width: geist.width + 24 }}
+    >
+      <span className="num">{kennung(l)}</span>
+      <span className="title">{l.titel}</span>
+    </div>
+  )
+}
+
+type Griff = (info: ZeilenInfo) => {
+  onTouchStart: (e: React.TouchEvent<HTMLElement>) => void
+  onMouseDown: (e: React.MouseEvent<HTMLElement>) => void
+}
+
+function Termin({ ev, probenLieder, zug, griff }: { ev: Ereignis; probenLieder: number[]; zug: Zug | null; griff: Griff }) {
   const nav = useNav()
   const daten = useDaten()
   const zeige = useMeldung()
-  const liste = daten.proEreignis.get(ev.id) ?? []
+  const gespeichert = daten.proEreignis.get(ev.id) ?? []
+  const liste = vorschau(zug, ev.id, gespeichert)
   const istProbe = ev.art === 'pr'
+  // Während des Ziehens: passt dieser Termin als Ziel? (gleiche Art; ein Lied je Woche nur in einem Gottesdienst)
+  const gesperrt = !!zug && (zug.art !== ev.art || (zug.von !== ev.id && gespeichert.includes(zug.liedId)))
+  const istZiel = !!zug && zug.ziel === ev.id
   // Breiter Modus: der Termin, dessen „Lied eintragen“ rechts offen ist, wird hervorgehoben
   const aktiv = nav.detail && 'ev' in nav.detail && nav.detail.ev === ev.id
   const offenesLied = nav.detail?.v === 'lied' ? nav.detail.id : undefined
@@ -72,7 +130,13 @@ function Termin({ ev, probenLieder }: { ev: Ereignis; probenLieder: number[] }) 
   }
 
   return (
-    <section className={'card ereignis' + (aktiv ? ' aktiv' : '')} aria-label={ereignisTitel(ev)}>
+    <section
+      className={'card ereignis' + (aktiv ? ' aktiv' : '') + (istZiel ? ' ziel' : '') + (gesperrt ? ' gesperrt' : '')}
+      aria-label={ereignisTitel(ev)}
+      data-ev={ev.id}
+      data-art={ev.art}
+      data-gesperrt={gesperrt ? 'ja' : undefined}
+    >
       <div className="cardhead">
         <h2>{ereignisTitel(ev)}</h2>
         {liste.length > 0 && <span className="count">{liste.length === 1 ? '1 Lied' : `${liste.length} Lieder`}</span>}
@@ -83,8 +147,15 @@ function Termin({ ev, probenLieder }: { ev: Ereignis; probenLieder: number[] }) 
       {liste.map((id) => {
         const l = daten.lieder.get(id)
         if (!l) return null
+        // Das gezogene Lied kann auch in einem anderen Termin stehen (z. B. Probe und Gottesdienst)
+        const platzhalter = zug?.liedId === id && zug.ziel === ev.id
         return (
-          <div className={'row' + (id === offenesLied ? ' gewaehlt' : '')} key={id}>
+          <div
+            className={'row' + (id === offenesLied ? ' gewaehlt' : '') + (platzhalter ? ' platzhalter' : '')}
+            key={id}
+            data-lied={id}
+            {...griff({ liedId: id, von: ev.id, art: ev.art, startIndex: gespeichert.indexOf(id) })}
+          >
             <span className="num">{kennung(l)}</span>
             <button className="main" type="button" onClick={() => nav.geh({ v: 'lied', id })}>
               <span className="title">{l.titel}</span>
