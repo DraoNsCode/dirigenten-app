@@ -435,11 +435,13 @@ export const STATUS_TEXT: Record<string, string> = {
 export const STATUS_RANG: Record<string, number> = { erlernt: 0, in_arbeit: 1, unbekannt: 2 }
 
 /** Rang bei der Auswahl für einen Gottesdienst (Daniel, 16.11.2026): eintragbar (erlernt, diese Woche
- *  noch in keinem Gottesdienst) → schon in einem Gottesdienst dieser Woche → in Arbeit → unbekannt */
-export function gottesdienstRang(l: Lied, schonEingetragen: boolean) {
-  if (schonEingetragen) return 1
+ *  noch in keinem Gottesdienst) → schon in diesem Gottesdienst → in einem anderen Gottesdienst dieser Woche
+ *  → in Arbeit → unbekannt */
+export function gottesdienstRang(l: Lied, imTermin: boolean, inDerWoche: boolean) {
+  if (imTermin) return 1
+  if (inDerWoche) return 2
   if (l.status === 'erlernt') return 0
-  return 1 + (STATUS_RANG[l.status] ?? 8)
+  return 2 + (STATUS_RANG[l.status] ?? 8)
 }
 
 /** Lied-IDs aller Gottesdienste in der Woche eines Termins */

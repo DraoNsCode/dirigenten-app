@@ -7,8 +7,9 @@ import { Haken, Lupe, Plus } from '../symbole'
 
 // Lied für einen Gottesdienst eintragen oder für die Probe vormerken.
 // Für Gottesdienste stehen nur erlernte Lieder zur Auswahl; die anderen erscheinen ausgegraut.
-// Beim Gottesdienst stehen oben die eintragbaren Lieder, darunter die schon in einem Gottesdienst dieser Woche,
-// dann in Arbeit, unten unbekannte (Daniel, 7.11. und 16.11.2026) – bei den Liedern aus der Probe und in den Suchtreffern.
+// Beim Gottesdienst stehen oben die eintragbaren Lieder, darunter die schon in diesem Gottesdienst, dann die in einem
+// anderen Gottesdienst dieser Woche, dann in Arbeit, unten unbekannte (Daniel, 7.11. und 16.11.2026) –
+// bei den Liedern aus der Probe und in den Suchtreffern.
 
 export default function Suche({ evId }: { evId: string }) {
   const daten = useDaten()
@@ -16,8 +17,10 @@ export default function Suche({ evId }: { evId: string }) {
   const ev = ereignisAusId(evId)
   const istProbe = ev.art === 'pr'
   const wochenEreignisse = ereignisseDerWoche(montagVon(ev.datum))
-  const eingetragen = liederInGottesdiensten(daten.proEreignis, ev)
-  const nachRang = (a: Lied, b: Lied) => gottesdienstRang(a, eingetragen.has(a.id)) - gottesdienstRang(b, eingetragen.has(b.id))
+  const hier = new Set(daten.proEreignis.get(ev.id) ?? [])
+  const inDerWoche = liederInGottesdiensten(daten.proEreignis, ev)
+  const rang = (l: Lied) => gottesdienstRang(l, hier.has(l.id), inDerWoche.has(l.id))
+  const nachRang = (a: Lied, b: Lied) => rang(a) - rang(b)
 
   // Beim Gottesdienst zuerst die Lieder der Probe derselben Woche anbieten
   const probe = !istProbe ? wochenEreignisse.find((e) => e.art === 'pr') : undefined

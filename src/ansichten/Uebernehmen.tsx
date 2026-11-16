@@ -6,8 +6,8 @@ import { useMeldung } from '../meldung'
 import { useNav } from '../navigation'
 
 // Lieder der Probe derselben Woche in einen Gottesdienst übernehmen (Eingabehilfe, keine Auswahlhilfe).
-// Reihenfolge wie bei „Lied eintragen“: eintragbare oben, dann schon in einem Gottesdienst dieser Woche,
-// dann in Arbeit, unten unbekannte; innerhalb davon wie in der Probe (Daniel, 16.11.2026).
+// Reihenfolge wie bei „Lied eintragen“: eintragbare oben, dann schon in diesem Gottesdienst, dann in einem anderen
+// Gottesdienst dieser Woche, dann in Arbeit, unten unbekannte; innerhalb davon wie in der Probe (Daniel, 16.11.2026).
 
 export default function Uebernehmen({ evId }: { evId: string }) {
   const nav = useNav()
@@ -17,10 +17,10 @@ export default function Uebernehmen({ evId }: { evId: string }) {
   const probe = ereignisseDerWoche(montagVon(ev.datum)).find((e) => e.art === 'pr')
   const probenLieder = probe ? daten.proEreignis.get(probe.id) ?? [] : []
   const schonDrin = new Set(daten.proEreignis.get(ev.id) ?? [])
-  const eingetragen = liederInGottesdiensten(daten.proEreignis, ev)
+  const inDerWoche = liederInGottesdiensten(daten.proEreignis, ev)
   const rang = (id: number) => {
     const l = daten.lieder.get(id)
-    return l ? gottesdienstRang(l, eingetragen.has(id)) : 9
+    return l ? gottesdienstRang(l, schonDrin.has(id), inDerWoche.has(id)) : 99
   }
   const anzeige = [...probenLieder].sort((a, b) => rang(a) - rang(b))
 
