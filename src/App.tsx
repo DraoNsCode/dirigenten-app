@@ -229,7 +229,7 @@ function Hauptansicht({ email }: { email: string }) {
   // Zurück-Wischen auf iPhone/iPad: eigene Geste, die Leiste bleibt stehen (siehe wischen.tsx)
   const layoutRef = useRef(layout)
   layoutRef.current = layout
-  const { unterlage, unterlageRef, schleierRef } = useZurueckWischen({
+  const { unterlage, rahmenRef, unterlageRef, schleierRef } = useZurueckWischen({
     kannZurueck: () => layoutRef.current !== 'breit' && aktuell.current.stapel.length > 1,
     ansicht,
     zurueck,
@@ -364,7 +364,7 @@ function Hauptansicht({ email }: { email: string }) {
             </main>
             {unterlage && stapel.length > 1 && (
               // Rahmen in der Größe der Ansicht: die versetzte Unterlage überdeckt nie die Leiste
-              <div className="unterlage-rahmen" style={unterlage} aria-hidden="true" inert>
+              <div className="unterlage-rahmen" ref={rahmenRef} style={unterlage} aria-hidden="true" inert>
                 <main
                   className="view unterlage"
                   ref={unterlageRef}

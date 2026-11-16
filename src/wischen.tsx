@@ -42,6 +42,8 @@ export function useZurueckWischen(o: {
   zurueck: () => void
 }) {
   const [unterlage, setUnterlage] = useState<Rahmen | null>(null)
+  // Rahmen der Unterlage: unsichtbar, bis die Geste beginnt (sonst läge sie kurz über der aktuellen Ansicht)
+  const rahmenRef = useRef<HTMLDivElement>(null)
   const unterlageRef = useRef<HTMLElement>(null)
   const schleierRef = useRef<HTMLDivElement>(null)
   const opt = useRef(o)
@@ -75,6 +77,12 @@ export function useZurueckWischen(o: {
       }
     }
 
+    /** Unterlage sofort unsichtbar machen und entfernen – immer bevor die Ansicht wieder nach hinten rückt */
+    const unterlageWeg = () => {
+      rahmenRef.current?.classList.remove('sichtbar')
+      flushSync(() => setUnterlage(null))
+    }
+
     const aufraeumen = () => {
       const oben = opt.current.ansicht.current
       if (oben) {
@@ -89,12 +97,15 @@ export function useZurueckWischen(o: {
       const oben = opt.current.ansicht.current
       if (!oben) return
       const r = oben.getBoundingClientRect()
-      setUnterlage({ top: r.top, left: r.left, width: r.width, height: r.height })
+      // Sofort aufbauen (noch unsichtbar), damit sie beim ersten Bewegen bereitliegt
+      flushSync(() => setUnterlage({ top: r.top, left: r.left, width: r.width, height: r.height }))
     }
 
+    /** Ansicht nach vorn, Unterlage sichtbar – im selben Schritt, damit nichts aufblitzt */
     const aktivieren = () => {
       opt.current.ansicht.current?.classList.add('wischt')
       document.documentElement.classList.add('wischt')
+      rahmenRef.current?.classList.add('sichtbar')
     }
 
     const nachDauer = (f: () => void) => window.setTimeout(f, DAUER + 20)
@@ -118,8 +129,8 @@ export function useZurueckWischen(o: {
       setzeLage(0, true)
       nachDauer(() => {
         laeuft = false
+        unterlageWeg()
         aufraeumen()
-        setUnterlage(null)
       })
     }
 
@@ -140,7 +151,7 @@ export function useZurueckWischen(o: {
       if (e.touches.length !== 1) {
         if (s && !s.aktiv) {
           s = null
-          setUnterlage(null)
+          unterlageWeg()
         }
         return
       }
@@ -172,7 +183,7 @@ export function useZurueckWischen(o: {
           aktivieren()
         } else {
           s.verworfen = true
-          setUnterlage(null)
+          unterlageWeg()
           return
         }
       }
@@ -196,7 +207,7 @@ export function useZurueckWischen(o: {
         else zurueckfedern()
         return
       }
-      setUnterlage(null)
+      unterlageWeg()
       if (!fertig.verworfen && e.timeStamp - fertig.t0 < 600) tippen(fertig.x0, fertig.y0)
     }
 
@@ -205,7 +216,7 @@ export function useZurueckWischen(o: {
       const fertig = s
       s = null
       if (fertig.aktiv) zurueckfedern()
-      else setUnterlage(null)
+      else unterlageWeg()
     }
 
     const o2 = { capture: true, passive: false } as const
@@ -222,5 +233,5 @@ export function useZurueckWischen(o: {
     }
   }, [])
 
-  return { unterlage, unterlageRef, schleierRef }
+  return { unterlage, rahmenRef, unterlageRef, schleierRef }
 }

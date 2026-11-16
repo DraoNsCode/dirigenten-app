@@ -323,7 +323,8 @@ textarea { width: 100%; min-height: 84px; padding: 10px 12px; border: 1px solid 
 /* ---------- Zurück-Wischen auf iPhone/iPad (wischen.tsx): nur die Ansicht bewegt sich, die Leiste bleibt ---------- */
 html.wischt .app { overflow: hidden; }
 .view.wischt { position: relative; z-index: 3; background: var(--bg); box-shadow: -6px 0 18px rgba(0, 0, 0, .14); will-change: transform; }
-.unterlage-rahmen { position: fixed; z-index: 1; overflow: hidden; pointer-events: none; }
+.unterlage-rahmen { position: fixed; z-index: 1; overflow: hidden; pointer-events: none; visibility: hidden; }
+.unterlage-rahmen.sichtbar { visibility: visible; }
 .view.unterlage { position: absolute; inset: 0; overflow: hidden; background: var(--bg); will-change: transform; }
 .wisch-schleier { position: absolute; inset: 0; background: rgba(0, 0, 0, .12); }
 
