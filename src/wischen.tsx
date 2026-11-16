@@ -3,18 +3,19 @@ import { flushSync } from 'react-dom'
 
 // Zurück-Wischen auf iPhone und iPad, nachgebaut (Daniel, 16.11.2026):
 // Die eingebaute Geste von iOS verschiebt ein Bild der ganzen Seite – samt Leiste unten. Deshalb wird sie
-// am linken Rand gesperrt und hier nachgebaut: Nur die Ansicht folgt dem Finger, darunter liegt die vorherige
-// Ansicht (leicht versetzt und abgedunkelt), die Leiste bleibt stehen.
-// Vorwärts-Wischen vom rechten Rand ist ganz abgeschaltet.
-// Gesperrt wird über das Verhindern des Berührungsbeginns am Rand (geht seit iOS 13.4). Dadurch gibt es im
-// Randstreifen auch kein Antippen und kein Scrollen mehr; Antippen wird deshalb nachgebaut.
+// hier nachgebaut: Nur die Ansicht folgt dem Finger, darunter liegt die vorherige Ansicht (leicht versetzt
+// und abgedunkelt), die Leiste bleibt stehen.
+// Die eingebaute Geste ist dadurch abgeschaltet, dass die App auf iOS keine Verlaufseinträge anlegt (App.tsx);
+// sie hat dann weder zurück noch vorwärts ein Ziel. (Das Sperren über den Berührungsbeginn am Rand reicht in der
+// App auf dem Home-Bildschirm nicht – beide Gesten liefen parallel.)
+// Eine Berührung am linken Rand gehört der eigenen Geste: dort kein Scrollen, Antippen wird nachgebaut.
 // Andere Geräte (Android, PC) behalten ihr gewohntes Verhalten.
 
 export const IST_IOS =
   typeof navigator !== 'undefined' &&
   (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1))
 
-const RAND = 24 // Breite des Randstreifens, in dem iOS seine Geste erkennt
+const RAND = 24 // Breite des Randstreifens, in dem die Geste beginnt
 const SCHWELLE = 10 // ab dieser Bewegung ist es kein Antippen mehr
 export const VERSATZ = 0.3 // so weit liegt die vorherige Ansicht anfangs nach links versetzt (Anteil der Breite)
 const DAUER = 260 // ms für das Ein- bzw. Zurückfedern
@@ -28,8 +29,6 @@ type Sitzung = {
   t0: number
   x: number
   y: number
-  /** zurueck: eigene Geste möglich; tippen: nur Antippen nachbauen */
-  art: 'zurueck' | 'tippen'
   aktiv: boolean
   verworfen: boolean
   /** letzte Punkte für die Geschwindigkeit */
@@ -39,8 +38,6 @@ type Sitzung = {
 export function useZurueckWischen(o: {
   /** eigene Geste möglich (es gibt eine vorherige Ansicht, eine Ansicht im Bild) */
   kannZurueck: () => boolean
-  /** iOS-Geste am linken Rand sperren */
-  sperreLinks: () => boolean
   ansicht: RefObject<HTMLElement | null>
   zurueck: () => void
 }) {
@@ -152,15 +149,12 @@ export function useZurueckWischen(o: {
         return
       }
       const t = e.touches[0]
-      const links = t.clientX < RAND
-      const rechts = t.clientX > window.innerWidth - RAND
-      if (!links && !rechts) return
-      if (links && !opt.current.sperreLinks()) return
+      if (t.clientX >= RAND || !opt.current.kannZurueck()) return
+      // Die Berührung gehört der eigenen Geste (kein Scrollen, kein Klick – Antippen wird nachgebaut)
       e.preventDefault()
-      const art = links && opt.current.kannZurueck() ? 'zurueck' : 'tippen'
-      s = { x0: t.clientX, y0: t.clientY, t0: e.timeStamp, x: t.clientX, y: t.clientY, art, aktiv: false, verworfen: false, punkte: [] }
+      s = { x0: t.clientX, y0: t.clientY, t0: e.timeStamp, x: t.clientX, y: t.clientY, aktiv: false, verworfen: false, punkte: [] }
       // Die vorherige Ansicht schon jetzt aufbauen, damit sie beim ersten Bewegen bereitliegt
-      if (art === 'zurueck') vorbereiten()
+      vorbereiten()
     }
 
     const bewegt = (e: TouchEvent) => {
@@ -173,12 +167,12 @@ export function useZurueckWischen(o: {
       const dy = s.y - s.y0
       if (!s.aktiv && !s.verworfen) {
         if (Math.abs(dx) < SCHWELLE && Math.abs(dy) < SCHWELLE) return
-        if (s.art === 'zurueck' && dx > 0 && Math.abs(dx) > Math.abs(dy)) {
+        if (dx > 0 && Math.abs(dx) > Math.abs(dy)) {
           s.aktiv = true
           aktivieren()
         } else {
           s.verworfen = true
-          if (s.art === 'zurueck') setUnterlage(null)
+          setUnterlage(null)
           return
         }
       }
@@ -202,7 +196,7 @@ export function useZurueckWischen(o: {
         else zurueckfedern()
         return
       }
-      if (fertig.art === 'zurueck') setUnterlage(null)
+      setUnterlage(null)
       if (!fertig.verworfen && e.timeStamp - fertig.t0 < 600) tippen(fertig.x0, fertig.y0)
     }
 
@@ -211,7 +205,7 @@ export function useZurueckWischen(o: {
       const fertig = s
       s = null
       if (fertig.aktiv) zurueckfedern()
-      else if (fertig.art === 'zurueck') setUnterlage(null)
+      else setUnterlage(null)
     }
 
     const o2 = { capture: true, passive: false } as const

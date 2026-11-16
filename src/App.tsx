@@ -39,7 +39,7 @@ import FamilieSeite from './ansichten/FamilieSeite'
 import { InhaltProvider } from './themen/daten'
 import { ThemenAuswahlProvider } from './themen/auswahl'
 import ProbeAuswahl from './ansichten/ProbeAuswahl'
-import { useZurueckWischen, VERSATZ } from './wischen'
+import { IST_IOS, useZurueckWischen, VERSATZ } from './wischen'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
@@ -52,10 +52,12 @@ const START: Record<Reiter, Ansicht> = {
 
 /**
  * Verlauf (Daniel, 16.11.2026): Jede geöffnete Ansicht ist ein Eintrag im Browserverlauf. So funktionieren
- * das gewohnte Zurück-Wischen vom linken Rand (iPhone, auch als App auf dem Home-Bildschirm), die Zurück-Geste
- * auf Android und die Zurück-Taste im Browser. Jeder Eintrag trägt den ganzen Stapel; ein Reiterwechsel
- * erzeugt keinen Zurück-Schritt (der Verlauf wird auf den ersten Eintrag zurückgesetzt).
+ * die Zurück-Geste auf Android und die Zurück-Taste im Browser. Jeder Eintrag trägt den ganzen Stapel; ein
+ * Reiterwechsel erzeugt keinen Zurück-Schritt (der Verlauf wird auf den ersten Eintrag zurückgesetzt).
+ * Nicht auf iPhone/iPad: Dort liefe sonst die eingebaute Wischgeste von iOS parallel zur eigenen
+ * (wischen.tsx) – ohne Verlaufseinträge hat die eingebaute Geste kein Ziel und bleibt untätig.
  */
+const MIT_VERLAUF = !IST_IOS
 type VerlaufsEintrag = { dirigentenApp: 1; tiefe: number; reiter: Reiter; stapel: Ansicht[]; generation: number }
 const istEintrag = (x: unknown): x is VerlaufsEintrag => !!x && (x as VerlaufsEintrag).dirigentenApp === 1
 const gleich = (a: Ansicht[], b: Ansicht[]) => JSON.stringify(a) === JSON.stringify(b)
@@ -114,7 +116,7 @@ function Hauptansicht({ email }: { email: string }) {
   // ---------- Verlauf ----------
   /** Tiefe des angezeigten Eintrags im Verlauf (0 = erster Eintrag der App) */
   const tiefe = useRef(0)
-  /** Scrollstand je Tiefe, damit eine Ansicht beim Zurückgehen dort steht, wo man sie verlassen hat */
+  /** Scrollstand je Stapelplatz, damit eine Ansicht beim Zurückgehen dort steht, wo man sie verlassen hat */
   const scrollMerker = useRef<number[]>([])
   const scrollZiel = useRef<number | null>(null)
   /** Eintrag, der nach dem Zurückspulen des Verlaufs (Reiterwechsel) gesetzt wird */
@@ -137,20 +139,22 @@ function Hauptansicht({ email }: { email: string }) {
     setStapel(s)
   }, [])
   const merkeScroll = () => {
-    scrollMerker.current[tiefe.current] = ansicht.current?.scrollTop ?? 0
+    scrollMerker.current[aktuell.current.stapel.length - 1] = ansicht.current?.scrollTop ?? 0
   }
 
-  /** Neue Ansicht: neuer Eintrag im Verlauf (vor dem Umschalten, damit iOS die alte Ansicht als Bild behält) */
+  /** Neue Ansicht: neuer Eintrag im Verlauf */
   const vorwaerts = useCallback((s: Ansicht[]) => {
     merkeScroll()
-    tiefe.current += 1
-    history.pushState(eintrag(tiefe.current, aktuell.current.reiter, s), '')
+    if (MIT_VERLAUF) {
+      tiefe.current += 1
+      history.pushState(eintrag(tiefe.current, aktuell.current.reiter, s), '')
+    }
     setze(aktuell.current.reiter, s)
   }, [setze])
 
   /** Oberste Ansicht austauschen, ohne Zurück-Schritt */
   const ersetzeOben = useCallback((s: Ansicht[]) => {
-    history.replaceState(eintrag(tiefe.current, aktuell.current.reiter, s), '')
+    if (MIT_VERLAUF) history.replaceState(eintrag(tiefe.current, aktuell.current.reiter, s), '')
     setze(aktuell.current.reiter, s)
   }, [setze])
 
@@ -158,6 +162,7 @@ function Hauptansicht({ email }: { email: string }) {
   const neuBeginnen = useCallback((r: Reiter, s: Ansicht[]) => {
     setze(r, s)
     scrollMerker.current = []
+    if (!MIT_VERLAUF) return
     generation.current += 1
     const e = eintrag(0, r, s)
     const d = tiefe.current
@@ -173,20 +178,19 @@ function Hauptansicht({ email }: { email: string }) {
     if (s.length <= 1) return
     const neu = s.slice(0, -1)
     merkeScroll()
+    scrollZiel.current = scrollMerker.current[neu.length - 1] ?? null
+    // Sofort umschalten; ein folgendes popstate bringt denselben Stapel und ändert nichts mehr
+    setze(aktuell.current.reiter, neu)
+    if (!MIT_VERLAUF) return
     const d = tiefe.current
     if (d > 0) {
-      // Sofort umschalten; das folgende popstate bringt denselben Stapel und ändert nichts mehr
       tiefe.current = d - 1
-      scrollZiel.current = scrollMerker.current[d - 1] ?? null
-      setze(aktuell.current.reiter, neu)
       history.back()
-    } else {
-      history.replaceState(eintrag(0, aktuell.current.reiter, neu), '')
-      setze(aktuell.current.reiter, neu)
-    }
+    } else history.replaceState(eintrag(0, aktuell.current.reiter, neu), '')
   }, [setze])
 
   useEffect(() => {
+    if (!MIT_VERLAUF) return
     // Nach einem Neuladen liegen ältere Einträge davor: die Tiefe des Eintrags behalten,
     // damit die Tiefe immer dem Abstand zum ersten Eintrag der App entspricht
     tiefe.current = istEintrag(history.state) ? history.state.tiefe : 0
@@ -215,8 +219,7 @@ function Hauptansicht({ email }: { email: string }) {
       if (t === tiefe.current && r === aktuell.current.reiter && gleich(s, aktuell.current.stapel)) return
       merkeScroll()
       tiefe.current = t
-      scrollZiel.current = scrollMerker.current[t] ?? null
-      // Sofort zeichnen, damit nach der Wisch-Animation von iOS nicht kurz die alte Ansicht erscheint
+      scrollZiel.current = scrollMerker.current[s.length - 1] ?? null
       flushSync(() => setze(r, s))
     }
     window.addEventListener('popstate', beiPop)
@@ -228,13 +231,12 @@ function Hauptansicht({ email }: { email: string }) {
   layoutRef.current = layout
   const { unterlage, unterlageRef, schleierRef } = useZurueckWischen({
     kannZurueck: () => layoutRef.current !== 'breit' && aktuell.current.stapel.length > 1,
-    sperreLinks: () => layoutRef.current !== 'breit' && (aktuell.current.stapel.length > 1 || tiefe.current > 0),
     ansicht,
     zurueck,
   })
   // Die vorherige Ansicht unter der aktuellen dort zeigen, wo man sie verlassen hat
   useLayoutEffect(() => {
-    if (unterlage && unterlageRef.current) unterlageRef.current.scrollTop = scrollMerker.current[tiefe.current - 1] ?? 0
+    if (unterlage && unterlageRef.current) unterlageRef.current.scrollTop = scrollMerker.current[stapel.length - 2] ?? 0
   }, [unterlage, unterlageRef])
 
   // Scrollstand nach dem Zurückgehen wiederherstellen (breit: die Liste links bleibt ohnehin stehen)
