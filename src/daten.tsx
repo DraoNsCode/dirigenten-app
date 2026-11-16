@@ -434,6 +434,23 @@ export const STATUS_TEXT: Record<string, string> = {
 /** Reihenfolge für Sortierungen: erlernt vor in Arbeit vor unbekannt */
 export const STATUS_RANG: Record<string, number> = { erlernt: 0, in_arbeit: 1, unbekannt: 2 }
 
+/** Rang bei der Auswahl für einen Gottesdienst (Daniel, 16.11.2026): eintragbar (erlernt, diese Woche
+ *  noch in keinem Gottesdienst) → schon in einem Gottesdienst dieser Woche → in Arbeit → unbekannt */
+export function gottesdienstRang(l: Lied, schonEingetragen: boolean) {
+  if (schonEingetragen) return 1
+  if (l.status === 'erlernt') return 0
+  return 1 + (STATUS_RANG[l.status] ?? 8)
+}
+
+/** Lied-IDs aller Gottesdienste in der Woche eines Termins */
+export function liederInGottesdiensten(proEreignis: Map<string, number[]>, ev: Ereignis) {
+  return new Set(
+    ereignisseDerWoche(montagVon(ev.datum))
+      .filter((e) => e.art === 'gd')
+      .flatMap((e) => proEreignis.get(e.id) ?? []),
+  )
+}
+
 /** Nach Kennung sortieren: D, R, dann ZD, ZR (außerhalb des Liederbuchs), jeweils nach Nummer */
 export const nachKennung = (a: Lied, b: Lied) => a.kuerzel.localeCompare(b.kuerzel) || a.nummer - b.nummer
 

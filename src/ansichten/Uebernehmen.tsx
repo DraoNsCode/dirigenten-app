@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from 'react'
 import { Kopf, Zurueck } from '../bausteine'
-import { kennung, useDaten } from '../daten'
+import { gottesdienstRang, kennung, liederInGottesdiensten, useDaten } from '../daten'
 import { ereignisAusId, ereignisseDerWoche, ereignisTitel, kurzDatum, montagVon, terminKurz } from '../kalender'
 import { useMeldung } from '../meldung'
 import { useNav } from '../navigation'
 
 // Lieder der Probe derselben Woche in einen Gottesdienst übernehmen (Eingabehilfe, keine Auswahlhilfe).
+// Reihenfolge wie bei „Lied eintragen“: eintragbare oben, dann schon in einem Gottesdienst dieser Woche,
+// dann in Arbeit, unten unbekannte; innerhalb davon wie in der Probe (Daniel, 16.11.2026).
 
 export default function Uebernehmen({ evId }: { evId: string }) {
   const nav = useNav()
@@ -15,6 +17,12 @@ export default function Uebernehmen({ evId }: { evId: string }) {
   const probe = ereignisseDerWoche(montagVon(ev.datum)).find((e) => e.art === 'pr')
   const probenLieder = probe ? daten.proEreignis.get(probe.id) ?? [] : []
   const schonDrin = new Set(daten.proEreignis.get(ev.id) ?? [])
+  const eingetragen = liederInGottesdiensten(daten.proEreignis, ev)
+  const rang = (id: number) => {
+    const l = daten.lieder.get(id)
+    return l ? gottesdienstRang(l, eingetragen.has(id)) : 9
+  }
+  const anzeige = [...probenLieder].sort((a, b) => rang(a) - rang(b))
 
   // Ein Lied steht in einer Woche höchstens in einem Gottesdienst (Daniel, 16.11.2026)
   const belegt = (id: number) => (schonDrin.has(id) ? undefined : daten.schonInDerWoche(ev, id))
@@ -58,7 +66,7 @@ export default function Uebernehmen({ evId }: { evId: string }) {
       </p>
       <form onSubmit={absenden}>
         <div>
-          {probenLieder.map((id) => {
+          {anzeige.map((id) => {
             const l = daten.lieder.get(id)
             if (!l) return null
             const drin = schonDrin.has(id)
