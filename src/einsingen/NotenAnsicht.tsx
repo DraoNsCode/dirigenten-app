@@ -68,18 +68,29 @@ function dynamik(tune: TuneObject): { stufe: (t: number) => number; grenzen: num
     }
   }
   if (!marken.length && !gabeln.length) return null
-  const ohneGabel = (x: number) => marken.reduce((l, m) => (m.t <= x + 1e-9 ? m.l : l), 0.8)
-  const stufe = (x: number) => {
-    for (const g of gabeln) {
-      if (x <= g.von || x >= g.bis) continue
-      const a = ohneGabel(g.von)
-      const ziel = marken.find((m) => Math.abs(m.t - g.bis) < 1e-9)
-      const b = ziel ? ziel.l : a * (g.auf ? 1.5 : 0.65)
-      return a + ((b - a) * (x - g.von)) / (g.bis - g.von)
-    }
-    return ohneGabel(x)
+  // Stärke an jedem Zeitpunkt, an dem sich etwas ändert, der Reihe nach: Eine Gabel beginnt bei der Stärke, die gerade gilt,
+  // und endet beim Zeichen an ihrem Ende, ohne Zeichen eine Stufe weiter. Danach gilt die erreichte Stärke weiter.
+  const grenzen = [...new Set([0, ...marken.map((m) => m.t), ...gabeln.flatMap((g) => [g.von, g.bis])])].sort((a, b) => a - b)
+  const gleich = (a: number, b: number) => Math.abs(a - b) < 1e-9
+  const punkte: { t: number; l: number }[] = []
+  let l = 0.8
+  for (const zeit of grenzen) {
+    const marke = marken.find((m) => gleich(m.t, zeit))
+    const endet = gabeln.find((g) => gleich(g.bis, zeit))
+    if (endet) {
+      const anfang = punkte.find((pt) => gleich(pt.t, endet.von))?.l ?? l
+      l = marke ? marke.l : anfang * (endet.auf ? 1.5 : 0.65)
+    } else if (marke) l = marke.l
+    punkte.push({ t: zeit, l })
   }
-  const grenzen = [...new Set([...marken.map((m) => m.t), ...gabeln.flatMap((g) => [g.von, g.bis])])].sort((a, b) => a - b)
+  const gleitend = (a: number, b: number) => gabeln.some((g) => g.von <= a + 1e-9 && g.bis >= b - 1e-9)
+  const stufe = (x: number) => {
+    let i = punkte.length - 1
+    while (i > 0 && punkte[i].t > x + 1e-9) i--
+    const a = punkte[i]
+    const b = punkte[i + 1]
+    return b && gleitend(a.t, b.t) ? a.l + ((b.l - a.l) * (x - a.t)) / (b.t - a.t) : a.l
+  }
   return { stufe, grenzen }
 }
 
