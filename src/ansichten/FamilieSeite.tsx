@@ -13,6 +13,9 @@ import type { Angaben, Folie, Stufe } from '../themen/typen'
 // Noten, Texte oder eine eigene Folie, lässt sie sich aufklappen. Die Grundübung (Knopf neben dem Titel) und jede
 // Stufe lassen sich für die Probenfolien auswählen, auch mehrere zugleich.
 
+/** In diesen Phasen kommt es auf genaue Längen an: Die Noten bieten ein Metronom zum Zuschalten */
+const METRONOM_PHASEN = ['Rhythmus']
+
 /** Was auf der Folie steht, in einer Zeile */
 function folienzeile(f: Folie, mitNoten: boolean): string {
   const text = Array.isArray(f.text) ? f.text.join(' · ') : f.text
@@ -58,7 +61,7 @@ function Durchfuehrung({ a }: { a: Angaben }) {
   )
 }
 
-function StufenZeile({ nr, s, familie }: { nr: number; s: Stufe; familie: string }) {
+function StufenZeile({ nr, s, familie, mitMetronom }: { nr: number; s: Stufe; familie: string; mitMetronom: boolean }) {
   const [offen, setOffen] = useState(false)
   const eigenes = !!(s.noten || s.folie || s.ziel || s.ansage || s.gelingt?.length || s.fehler)
   const kopf = (
@@ -85,7 +88,7 @@ function StufenZeile({ nr, s, familie }: { nr: number; s: Stufe; familie: string
       </div>
       {offen && (
         <div className="th-stufeninhalt">
-          {s.noten && <NotenAnsicht abc={s.noten} hinweis={s.notenHinweis} lage={s.lage} />}
+          {s.noten && <NotenAnsicht abc={s.noten} hinweis={s.notenHinweis} lage={s.lage} mitMetronom={mitMetronom} />}
           {s.ziel && <p className="ue-ziel">{s.ziel}</p>}
           <Durchfuehrung a={s} />
           {s.folie && <p className="th-folie">Auf der Folie: {folienzeile(s.folie, !!s.noten)}</p>}
@@ -112,6 +115,7 @@ export default function FamilieSeite({ id }: { id: string }) {
   }
 
   const g = f.grund
+  const mitMetronom = METRONOM_PHASEN.includes(f.phase)
   return (
     <>
       <Zurueck text={zurueck} />
@@ -119,7 +123,7 @@ export default function FamilieSeite({ id }: { id: string }) {
 
       <section className="ein-teil">
         {g.name !== f.name && <h2 className="ein-teilname">{g.name}</h2>}
-        {g.noten && <NotenAnsicht abc={g.noten} hinweis={g.notenHinweis} lage={g.lage} />}
+        {g.noten && <NotenAnsicht abc={g.noten} hinweis={g.notenHinweis} lage={g.lage} mitMetronom={mitMetronom} />}
         <p className="ue-ziel">{g.ziel}</p>
         <Durchfuehrung a={g} />
         <p className="th-folie">Auf der Folie: {folienzeile(g.folie, !!g.noten)}</p>
@@ -129,7 +133,7 @@ export default function FamilieSeite({ id }: { id: string }) {
         <Abschnitt titel="Stufen">
           <ol className="th-stufen">
             {f.stufen.map((s, i) => (
-              <StufenZeile key={s.id} nr={i + 1} s={s} familie={f.id} />
+              <StufenZeile key={s.id} nr={i + 1} s={s} familie={f.id} mitMetronom={mitMetronom} />
             ))}
           </ol>
         </Abschnitt>

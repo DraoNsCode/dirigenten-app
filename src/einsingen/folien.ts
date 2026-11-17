@@ -189,8 +189,8 @@ function notenFuerPdf(abcjs: Abcjs, halter: HTMLElement, abc: string, zeilenbrei
   const svg = ziel.querySelector('svg')
   if (!svg) return null
   svg.querySelectorAll('text').forEach((n) => {
+    // Beschriftungen über den Noten (Bausteine A, B, C) stehen wie Silben und Ziffern in Dunkeltext
     n.setAttribute('font-family', NOTEN)
-    if (n.closest('.abcjs-annotation')) n.setAttribute('fill', FARBE.grau)
   })
   return svg
 }

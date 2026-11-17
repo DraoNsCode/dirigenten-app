@@ -18,7 +18,7 @@ const ABSTAND = 7
 
 /** ABC so, wie es gezeigt wird: Schrift für Silben und Ziffern, Abstand der Silben, ohne Tempoangabe */
 export function abcZumZeigen(abc: string, schrift = 'Barlow', silbenAbstand = 0, natuerlich = false): string {
-  const kopf = [`%%vocalfont ${schrift} 13 bold`, `%%annotationfont ${schrift} 12`]
+  const kopf = [`%%vocalfont ${schrift} 13 bold`, `%%annotationfont ${schrift} 13 bold`]
   // Die letzte (bei kurzen Übungen: einzige) Zeile nicht in die Breite ziehen
   if (natuerlich) kopf.push('%%stretchlast false')
   if (silbenAbstand > 0) kopf.push(`%%vocalspace ${silbenAbstand.toFixed(1)}`)

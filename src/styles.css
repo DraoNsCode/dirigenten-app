@@ -420,6 +420,8 @@ dl.facts > div.breit { grid-column: 1 / -1; }
 .noten { width: 100%; color: var(--ink); overflow-x: auto; }
 .noten svg text:not(.abcjs-lyric) { font-family: var(--font-body); }
 .noten .abcjs-annotation { font-style: italic; fill: var(--muted); }
+/* Neue Ansicht: Beschriftungen über den Noten (Bausteine A, B, C) wie Silben und Ziffern */
+.ein-noten .noten .abcjs-annotation { font-style: normal; fill: currentColor; }
 .noten .abcjs-note.is-on, .noten .abcjs-note.is-on path { fill: var(--gold); }
 .noten-hinweis { margin: 0; font-size: 14px; color: var(--body); }
 .abspielen { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; }

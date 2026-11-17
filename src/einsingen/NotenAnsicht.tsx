@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { TuneObject } from 'abcjs'
 import { istRhythmus, schlag } from '../uebungen/abc'
-import { spielen, stoppen, stoppenWenn, type Ereignis } from '../uebungen/klang'
+import { metronom, spielen, stoppen, stoppenWenn, type Ereignis } from '../uebungen/klang'
 import { ladeAbcjs, zeilenbreite } from '../uebungen/Noten'
 import { KURZ_APP, notenZeichnen, type Abcjs } from './zeichnen'
 
 // Noten einer Grundübung oder Stufe: darüber ein Hinweis (falls vorhanden), darunter die Lageangabe,
-// dann „Ausgangston“ und „Anhören“ (mit mitlaufender Markierung). Kein Metronom, kein Transponieren.
+// dann „Ausgangston“ und „Anhören“ (mit mitlaufender Markierung). Kein Transponieren.
+// Ein Metronom zum Zuschalten gibt es nur, wo `mitMetronom` gesetzt ist (Übungen, bei denen es auf genaue Längen ankommt).
 // Das Abspieltempo steht als Q:-Zeile in den ABC-Noten und wird nicht angezeigt.
 
 /** Ohne Q:-Zeile wird mit diesem Tempo abgespielt (Schläge pro Minute) */
@@ -68,7 +69,18 @@ function notenMarken(abcjs: Abcjs, tune: TuneObject, viertelProMinute: number): 
   }
 }
 
-export default function NotenAnsicht({ abc, hinweis, lage }: { abc: string; hinweis?: string; lage?: string }) {
+export default function NotenAnsicht({
+  abc,
+  hinweis,
+  lage,
+  mitMetronom = false,
+}: {
+  abc: string
+  hinweis?: string
+  lage?: string
+  /** bietet ein Metronom zum Zuschalten an */
+  mitMetronom?: boolean
+}) {
   const ziel = useRef<HTMLDivElement>(null)
   const breite = useBreite(ziel)
   const [fehler, setFehler] = useState(false)
@@ -77,6 +89,8 @@ export default function NotenAnsicht({ abc, hinweis, lage }: { abc: string; hinw
   const spielId = useRef<number | null>(null)
 
   const rhythmus = istRhythmus(abc)
+  // Bei gesungenen Noten läuft das Metronom zuerst mit; gesprochene Rhythmen sind selbst Schläge
+  const [klick, setKlick] = useState(!rhythmus)
   const takt = schlag(abc)
   const tempo = abspielTempo(abc)
   const ganzeSek = 60 / (tempo * takt.laenge)
@@ -134,8 +148,19 @@ export default function NotenAnsicht({ abc, hinweis, lage }: { abc: string; hinw
     if (laeuft) return stoppen()
     const g = gezeichnet.current
     if (!g) return
-    const id = spielen(ereignisse(g.tune), {
-      marken: notenMarken(g.abcjs, g.tune, 240 / ganzeSek),
+    let ev = ereignisse(g.tune)
+    let marken = notenMarken(g.abcjs, g.tune, 240 / ganzeSek)
+    if (mitMetronom && klick && ev.length) {
+      // Wie in der bisherigen Sammlung: ein Takt Vorzählen, dann läuft das Metronom bis zum letzten Schlag mit
+      const schlagSek = takt.laenge * ganzeSek
+      const versatz = schlagSek * takt.proTakt
+      const ende = ev.reduce((m, e) => Math.max(m, e.start + (e.dauer ?? 0.1)), 0)
+      ev = ev.map((e) => ({ ...e, start: e.start + versatz }))
+      ev = [...ev, ...metronom(0, versatz + Math.ceil((ende - 1e-6) / schlagSek) * schlagSek, schlagSek, takt.proTakt)]
+      marken = marken.map((m) => ({ ...m, ms: m.ms + versatz * 1000 }))
+    }
+    const id = spielen(ev, {
+      marken,
       beiMarke: (m) => {
         markierungWeg()
         m.els.forEach((n) => n.classList.add('is-on'))
@@ -150,7 +175,7 @@ export default function NotenAnsicht({ abc, hinweis, lage }: { abc: string; hinw
   }
 
   return (
-    <div className="notenblock">
+    <div className="notenblock ein-noten">
       {hinweis && <p className="noten-hinweis">{hinweis}</p>}
       <div className="noten" ref={ziel} />
       {fehler && <p className="note">Die Noten konnten nicht dargestellt werden.</p>}
@@ -164,6 +189,18 @@ export default function NotenAnsicht({ abc, hinweis, lage }: { abc: string; hinw
         <button type="button" className="ghost voll" onClick={anhoeren} disabled={fehler}>
           {laeuft ? 'Stopp' : 'Anhören'}
         </button>
+        {mitMetronom && (
+          <button
+            type="button"
+            className="ghost plain metro"
+            aria-pressed={klick}
+            title="Einen Takt vorzählen und die Schläge mitklicken"
+            onClick={() => setKlick(!klick)}
+            disabled={laeuft}
+          >
+            Metronom
+          </button>
+        )}
       </div>
     </div>
   )
