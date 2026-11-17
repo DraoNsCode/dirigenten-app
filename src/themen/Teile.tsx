@@ -7,7 +7,7 @@ import { useThemenAuswahl } from './auswahl'
 import type { InhaltStand } from './daten'
 import type { Wahl } from './folie'
 
-// Bausteine der Reiter „Übungen“ und „Einsingen“ (Themen- und Familienseiten, Auswahl)
+// Bausteine des Reiters „Übungen“ (Themen- und Familienseiten, Auswahl)
 
 /** Was beim Laden oder bei einem Fehler statt der Liste steht */
 export function Ladezustand({ stand, neuLaden }: { stand: InhaltStand; neuLaden: () => void }) {
@@ -30,8 +30,6 @@ export function zurueckText(vorher: Ansicht | undefined, themaName?: (id: string
   switch (vorher?.v) {
     case 'vorbereiten':
       return 'Übungen'
-    case 'probe':
-      return 'Einsingen'
     case 'probe-auswahl':
       return 'Auswahl'
     case 'thema':

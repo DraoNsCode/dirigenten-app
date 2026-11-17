@@ -1,15 +1,14 @@
-import { Buch, Kalender, MenueSymbol, Noten, Stimmgabel } from './symbole'
+import { Buch, Kalender, MenueSymbol, Noten } from './symbole'
 
 // 'sammlung' ist die bisherige Übungssammlung: kein eigener Reiter in der Leiste, erreichbar über das Menü (übergangsweise)
-export type Reiter = 'woche' | 'lieder' | 'uebungen' | 'einsingen' | 'menue' | 'sammlung'
+export type Reiter = 'woche' | 'lieder' | 'uebungen' | 'menue' | 'sammlung'
 
-// Übungen und Einsingen sind die zwei Zugänge zu denselben Übungen (Daniel, 15.11.2026):
-// „Übungen“ zum Lesen und Vorbereiten über Themen, „Einsingen“ zum schnellen Auswählen für die Probe.
+// Ein Reiter „Übungen“ für Lesen und Auswählen (Daniel, 18.11.2026; vorher zwei Reiter „Übungen“ und „Einsingen“):
+// ausgewählt wird in der Liste, gelesen auf der Themen- und Familienseite.
 const REITER: { id: Reiter; text: string; Symbol: typeof Kalender }[] = [
   { id: 'woche', text: 'Wochenplan', Symbol: Kalender },
   { id: 'lieder', text: 'Lieder', Symbol: Noten },
   { id: 'uebungen', text: 'Übungen', Symbol: Buch },
-  { id: 'einsingen', text: 'Einsingen', Symbol: Stimmgabel },
   { id: 'menue', text: 'Menü', Symbol: MenueSymbol },
 ]
 

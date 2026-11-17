@@ -1,4 +1,4 @@
-import { Fragment, useState, type ReactNode } from 'react'
+import { Fragment, useEffect, useRef, useState, type ReactNode } from 'react'
 import { Kopf, Zurueck } from '../bausteine'
 import { useNav } from '../navigation'
 import { Runter } from '../symbole'
@@ -12,6 +12,8 @@ import type { Angaben, Folie, Stufe } from '../themen/typen'
 // „Gelingt, wenn“, typischer Fehler –, darunter die Stufen. Eine Stufe zeigt, was sich ändert; hat sie eigene
 // Noten, Texte oder eine eigene Folie, lässt sie sich aufklappen. Die Grundübung (Knopf neben dem Titel) und jede
 // Stufe lassen sich für die Probenfolien auswählen, auch mehrere zugleich.
+// Aus der Auswahl geöffnet (stufe), steht die gewählte Stufe offen und markiert da, und die Seite rückt zu ihr
+// (Daniel, 18.11.2026).
 
 /** In diesen Phasen kommt es auf genaue Längen an: Die Noten bieten ein Metronom zum Zuschalten */
 const METRONOM_PHASEN = ['Rhythmus']
@@ -72,9 +74,22 @@ function Durchfuehrung({ a }: { a: Angaben }) {
   )
 }
 
-function StufenZeile({ nr, s, familie, mitMetronom }: { nr: number; s: Stufe; familie: string; mitMetronom: boolean }) {
-  const [offen, setOffen] = useState(false)
+function StufenZeile({ nr, s, familie, mitMetronom, markiert }: { nr: number; s: Stufe; familie: string; mitMetronom: boolean; markiert: boolean }) {
   const eigenes = !!(s.noten || s.folie || s.ziel || s.ansage || s.gelingt?.length || s.fehler)
+  const [offen, setOffen] = useState(markiert && eigenes)
+  const zeile = useRef<HTMLLIElement>(null)
+
+  // Zur markierten Stufe rücken; die Noten darüber werden erst nach dem Laden gezeichnet, deshalb noch einmal danach
+  useEffect(() => {
+    if (!markiert) return
+    const hin = () => zeile.current?.scrollIntoView({ block: 'start' })
+    const r = requestAnimationFrame(hin)
+    const t = setTimeout(hin, 350)
+    return () => {
+      cancelAnimationFrame(r)
+      clearTimeout(t)
+    }
+  }, [markiert])
   const kopf = (
     <>
       <span className="th-stufennr">{nr}</span>
@@ -85,7 +100,7 @@ function StufenZeile({ nr, s, familie, mitMetronom }: { nr: number; s: Stufe; fa
     </>
   )
   return (
-    <li className="th-stufe">
+    <li className={'th-stufe' + (markiert ? ' markiert' : '')} ref={zeile}>
       <div className="th-stufenzeile">
         {eigenes ? (
           <button type="button" className="th-stufenkopf" aria-expanded={offen} onClick={() => setOffen(!offen)}>
@@ -109,7 +124,7 @@ function StufenZeile({ nr, s, familie, mitMetronom }: { nr: number; s: Stufe; fa
   )
 }
 
-export default function FamilieSeite({ id }: { id: string }) {
+export default function FamilieSeite({ id, stufe }: { id: string; stufe?: string }) {
   const nav = useNav()
   const { stand } = useInhalt()
   const d = stand.art === 'bereit' ? stand.d : null
@@ -144,7 +159,7 @@ export default function FamilieSeite({ id }: { id: string }) {
         <Abschnitt titel="Stufen">
           <ol className="th-stufen">
             {f.stufen.map((s, i) => (
-              <StufenZeile key={s.id} nr={i + 1} s={s} familie={f.id} mitMetronom={mitMetronom} />
+              <StufenZeile key={s.id} nr={i + 1} s={s} familie={f.id} mitMetronom={mitMetronom} markiert={s.id === stufe} />
             ))}
           </ol>
         </Abschnitt>

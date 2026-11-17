@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { supabase } from '../supabase'
 import { FORMATE, type Familie, type InhaltDatei, type Thema } from './typen'
 
-// Themen und Familien der Reiter „Übungen“ und „Einsingen“: Der GitHub-Ablauf im privaten Repo dirigenten-app-uebungen lädt bei jeder
+// Themen und Familien des Reiters „Übungen“: Der GitHub-Ablauf im privaten Repo dirigenten-app-uebungen lädt bei jeder
 // Änderung dirigenten-inhalt.json in den privaten Supabase-Speicher „uebungen“ (nur angemeldete Konten).
 // Geladen wird erst, wenn die Ansicht sie braucht; danach bleibt sie im Speicher der App.
 
@@ -12,8 +12,6 @@ const DATEI = 'dirigenten-inhalt.json'
 const NEU_NACH_MS = 10 * 60_000
 
 export type Inhalt = {
-  /** Phasen des Einsingens in ihrer Reihenfolge, jede mit ihren Familien */
-  phasen: { name: string; familien: Familie[] }[]
   /** alle Familien in der Reihenfolge der Liste (Phase, Thema, Stelle im Thema) */
   familien: Familie[]
   themen: Thema[]
@@ -31,7 +29,6 @@ export const InhaltKontext = createContext<Kontext | null>(null)
 
 export function aufbereiten(datei: InhaltDatei): Inhalt {
   return {
-    phasen: datei.phasen.map((name) => ({ name, familien: datei.familien.filter((f) => f.phase === name) })),
     familien: datei.familien,
     themen: datei.themen,
     thema: new Map(datei.themen.map((t) => [t.id, t])),

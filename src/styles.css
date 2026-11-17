@@ -499,9 +499,16 @@ body:has(.auswahl-leiste) .toast { bottom: calc(164px + env(safe-area-inset-bott
 .ein-teil:first-of-type { border-top: 0; padding-top: 0; }
 .ein-teilname { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.15; color: var(--ink); }
 
-/* ---------- Reiter Übungen und Einsingen (Themenseiten, Familien, Auswahl) ---------- */
-.th-themazeile { padding-top: 4px; }
-.th-themaname { font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.15; color: var(--ink); }
+/* ---------- Reiter Übungen (Liste, Themenseiten, Familien, Auswahl) ---------- */
+/* Überschrift eines Themas in der Liste; „Thema ›“ öffnet die Themenseite */
+.th-listenkopf {
+  width: 100%; display: flex; align-items: baseline; justify-content: space-between; gap: 12px;
+  margin: 6px 0 2px; padding: 6px 0; border: 0; background: transparent; cursor: pointer; text-align: left;
+}
+.th-listenkopf-name { font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--label); }
+.th-listenkopf-verweis { display: inline-flex; align-items: center; gap: 2px; font-size: 14px; font-weight: 600; color: var(--link); white-space: nowrap; }
+.th-listenkopf-verweis svg { color: var(--label); }
+.th-listenkopf[aria-current="true"] .th-listenkopf-name { text-decoration: underline; text-decoration-color: var(--gold); text-underline-offset: 4px; }
 /* Im Chor erkennen: die Beobachtung, darunter die Familie zum Antippen */
 .th-erkennen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
 .th-erkennen li { display: flex; flex-direction: column; gap: 2px; padding-left: 12px; border-left: 2px solid var(--line); }
@@ -537,6 +544,8 @@ body:has(.auswahl-leiste) .toast { bottom: calc(164px + env(safe-area-inset-bott
 /* Stufen */
 .th-stufen { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 8px; }
 .th-stufe { border: 1px solid var(--line); border-radius: 8px; background: var(--card); }
+/* Aus der Auswahl geöffnet: die gewählte Stufe */
+.th-stufe.markiert { border-color: var(--gold); box-shadow: 0 0 0 2px rgba(201, 162, 90, .35); scroll-margin-top: 16px; }
 .th-stufenkopf {
   display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 10px 12px; border: 0; background: transparent;
   text-align: left; color: var(--ink); font: inherit;
@@ -558,7 +567,7 @@ button.th-stufenkopf { cursor: pointer; }
 .th-stufenzeile { display: flex; align-items: flex-start; gap: 2px; padding-right: 10px; }
 .th-stufenzeile .th-stufenkopf { flex: 1; min-width: 0; }
 .th-stufenzeile .ein-wahl { margin-top: 8px; }
-/* Probe: Familie mit aufklappbaren Stufen */
+/* Liste: Familie mit aufklappbaren Stufen */
 .pr-familie .listbtn svg { flex-shrink: 0; color: var(--muted); transition: transform .15s; }
 .pr-familie .listbtn[aria-expanded="false"] svg { transform: rotate(-90deg); }
 @media (prefers-reduced-motion: reduce) { .pr-familie .listbtn svg { transition: none; } }

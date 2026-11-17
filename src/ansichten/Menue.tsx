@@ -52,7 +52,7 @@ export default function Menue({ email }: { email: string }) {
           </button>
         </li>
         <li>
-          {/* Übergangsweise: die frühere Sammlung, bis die Reiter „Übungen“ und „Einsingen“ sie ersetzen */}
+          {/* Übergangsweise: die frühere Sammlung, bis der Reiter „Übungen“ sie ersetzt */}
           <button className="menubtn" type="button" onClick={() => nav.reiter('sammlung')}>
             <Datei />
             <span className="main">

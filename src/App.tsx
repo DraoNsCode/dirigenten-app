@@ -33,7 +33,6 @@ import { SammlungProvider } from './uebungen/sammlung'
 import { AuswahlProvider } from './uebungen/auswahl'
 import Auswahl from './ansichten/Auswahl'
 import Vorbereiten from './ansichten/Vorbereiten'
-import Probe from './ansichten/Probe'
 import ThemaSeite from './ansichten/ThemaSeite'
 import FamilieSeite from './ansichten/FamilieSeite'
 import { InhaltProvider } from './themen/daten'
@@ -45,7 +44,6 @@ const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
   lieder: { v: 'lieder' },
   uebungen: { v: 'vorbereiten' },
-  einsingen: { v: 'probe' },
   menue: { v: 'menue' },
   sammlung: { v: 'uebungen' },
 }
@@ -326,12 +324,10 @@ function Hauptansicht({ email }: { email: string }) {
         return <Auswahl />
       case 'vorbereiten':
         return <Vorbereiten />
-      case 'probe':
-        return <Probe />
       case 'thema':
         return <ThemaSeite key={a.id} id={a.id} />
       case 'familie':
-        return <FamilieSeite key={a.id} id={a.id} />
+        return <FamilieSeite key={`${a.id}:${a.stufe ?? ''}`} id={a.id} stufe={a.stufe} />
       case 'probe-auswahl':
         return <ProbeAuswahl />
     }
@@ -389,8 +385,7 @@ function LeererBereich({ reiter }: { reiter: Reiter }) {
   const text: Record<Reiter, string> = {
     woche: 'Bei einem Termin „Lied eintragen“ oder „Lied vormerken“ wählen oder ein Lied antippen – es erscheint hier.',
     lieder: 'Ein Lied auswählen, um Angaben, Noten und Hinweise zu sehen.',
-    uebungen: 'Ein Thema oder eine Familie antippen, um sie hier zu lesen.',
-    einsingen: 'Übungen mit + auswählen; „Lesen“ zeigt eine Familie hier.',
+    uebungen: 'Eine Familie antippen: Links klappen ihre Stufen auf, hier steht ihre Seite. Mit + auswählen.',
     sammlung: 'Eine Übung oder Erklärung auswählen, um sie hier zu lesen.',
     menue: 'Gottesdienste, Proben oder „Lied hinzufügen“ wählen.',
   }

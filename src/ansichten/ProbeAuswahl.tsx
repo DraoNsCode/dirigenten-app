@@ -46,7 +46,7 @@ export default function ProbeAuswahl() {
 
       {!d && <p className="note">{stand.art === 'fehler' ? 'Die Themen konnten nicht geladen werden.' : 'Lädt …'}</p>}
 
-      {d && n === 0 && <p className="note">Noch nichts ausgewählt. Im Reiter „Einsingen“ rechts neben einer Übung auf + tippen.</p>}
+      {d && n === 0 && <p className="note">Noch nichts ausgewählt. Im Reiter „Übungen“ rechts neben einer Übung auf + tippen.</p>}
 
       {d && n > 0 && (
         <>
@@ -68,7 +68,7 @@ export default function ProbeAuswahl() {
                 >
                   <span className="num">{i + 1}</span>
                   <div className="main">
-                    <button type="button" className="auswahl-titel" disabled={!p.folie} onClick={() => nav.geh({ v: 'familie', id: p.w.familie })}>
+                    <button type="button" className="auswahl-titel" disabled={!p.folie} onClick={() => nav.geh({ v: 'familie', id: p.w.familie, stufe: p.w.einheit })}>
                       {p.f && p.folie ? p.f.name : `${p.s} (nicht mehr vorhanden)`}
                     </button>
                     {p.f && p.folie && (

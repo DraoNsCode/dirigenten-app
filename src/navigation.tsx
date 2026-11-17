@@ -16,11 +16,11 @@ export type Ansicht =
   | { v: 'uebung'; id: string }
   | { v: 'erklaerung'; id: string }
   | { v: 'auswahl' }
-  // Übungen und Einsingen: ein Inhalt, zwei Zugänge
+  // Reiter „Übungen“: Liste zum Auswählen, Themen- und Familienseite zum Lesen, Auswahl für die Probenfolien
   | { v: 'vorbereiten' }
-  | { v: 'probe' }
   | { v: 'thema'; id: string }
-  | { v: 'familie'; id: string }
+  /** stufe: aus der Auswahl geöffnet – diese Stufe steht offen und markiert da */
+  | { v: 'familie'; id: string; stufe?: string }
   | { v: 'probe-auswahl' }
 
 /** Einstellungen im Reiter Lieder; bleiben erhalten, solange die App offen ist */
