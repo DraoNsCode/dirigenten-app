@@ -9,7 +9,8 @@ import { KURZ_APP, notenZeichnen, type Abcjs } from './zeichnen'
 // dann „Ausgangston“ und „Anhören“ (mit mitlaufender Markierung). Kein Transponieren.
 // Ein Metronom zum Zuschalten gibt es nur, wo `mitMetronom` gesetzt ist (Übungen, bei denen es auf genaue Längen ankommt).
 // Bei zwei Stimmen (Frauen und Männer in zwei verbundenen Notenzeilen) spielt „Ausgangston“ den ersten Ton jeder Stimme,
-// nacheinander von oben nach unten; „Anhören“ spielt beide Stimmen zusammen.
+// die gleich zu Beginn singt, nacheinander von oben nach unten; wer später einsetzt, findet seinen Ton aus der Musik.
+// „Anhören“ spielt beide Stimmen zusammen.
 // Das Abspieltempo steht als Q:-Zeile in den ABC-Noten und wird nicht angezeigt.
 
 /** Ohne Q:-Zeile wird mit diesem Tempo abgespielt (Schläge pro Minute) */
@@ -123,15 +124,16 @@ function toene(tune: TuneObject, ganzeSek: number): Ton[] {
   return r.sort((a, b) => a.start - b.start)
 }
 
-/** Erster Ton jeder Stimme, von oben nach unten (einstimmig: ein Ton) */
+/** Erster Ton jeder Stimme, die gleich zu Beginn singt, von oben nach unten (einstimmig: ein Ton) */
 function anfangstoene(tune: TuneObject): number[] {
-  const r: number[] = []
+  const erste: AudioEreignis[] = []
   for (const spur of tune.setUpAudio({}).tracks) {
     let erster: AudioEreignis | null = null
     for (const e of spur as AudioEreignis[]) if (e.cmd === 'note' && (!erster || e.start < erster.start)) erster = e
-    if (erster) r.push(erster.pitch)
+    if (erster) erste.push(erster)
   }
-  return r.sort((a, b) => b - a)
+  const beginn = Math.min(...erste.map((e) => e.start))
+  return erste.filter((e) => e.start < beginn + 1e-6).map((e) => e.pitch).sort((a, b) => b - a)
 }
 
 /** Zeitpunkte (ms), zu denen Noten markiert werden */
