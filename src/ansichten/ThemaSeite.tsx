@@ -7,7 +7,8 @@ import { Absaetze, Klappe, ThemenLeiste } from '../themen/Teile'
 import type { Familie } from '../themen/typen'
 
 // Themenseite: immer sichtbar sind der Kern, „Im Chor erkennen“ und die Familien;
-// die weiteren Abschnitte stehen eingeklappt darunter.
+// die weiteren Abschnitte stehen eingeklappt darunter. Ein Thema ohne Familien ist ein Lesetext für die Dirigenten:
+// Seine Abschnitte stehen offen untereinander (Daniel, 17.11.2026: „einfach gute Texte zum Lesen“).
 
 export default function ThemaSeite({ id }: { id: string }) {
   const nav = useNav()
@@ -49,30 +50,39 @@ export default function ThemaSeite({ id }: { id: string }) {
         </Abschnitt>
       )}
 
-      <Abschnitt titel="Familien">
-        <ul className="list">
-          {familien.map((f) => (
-            <li key={f.id}>
-              <button className="listbtn" type="button" onClick={() => oeffne(f.id)}>
-                <span className="main">
-                  <span className="title">{f.name}</span>
-                  <span className="meta ein-ziel">{f.grund.ziel}</span>
-                </span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      </Abschnitt>
-
-      {!!t.abschnitte?.length && (
-        <div className="th-klappen">
-          {t.abschnitte.map((a) => (
-            <Klappe key={a.titel} titel={a.titel}>
-              <Absaetze text={a.text} />
-            </Klappe>
-          ))}
-        </div>
+      {!!familien.length && (
+        <Abschnitt titel="Familien">
+          <ul className="list">
+            {familien.map((f) => (
+              <li key={f.id}>
+                <button className="listbtn" type="button" onClick={() => oeffne(f.id)}>
+                  <span className="main">
+                    <span className="title">{f.name}</span>
+                    <span className="meta ein-ziel">{f.grund.ziel}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+        </Abschnitt>
       )}
+
+      {!!t.abschnitte?.length &&
+        (familien.length ? (
+          <div className="th-klappen">
+            {t.abschnitte.map((a) => (
+              <Klappe key={a.titel} titel={a.titel}>
+                <Absaetze text={a.text} />
+              </Klappe>
+            ))}
+          </div>
+        ) : (
+          t.abschnitte.map((a) => (
+            <Abschnitt key={a.titel} titel={a.titel}>
+              <Absaetze text={a.text} />
+            </Abschnitt>
+          ))
+        ))}
       <ThemenLeiste />
     </>
   )

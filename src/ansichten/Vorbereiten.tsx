@@ -42,12 +42,14 @@ export default function Vorbereiten() {
               <span className="meta ein-ziel">{t.kern}</span>
             </span>
           </button>
-          <ul className="list">
-            {t.familien
-              .map((id) => d.familie.get(id))
-              .filter((f): f is Familie => !!f)
-              .map(familienZeile)}
-          </ul>
+          {!!t.familien.length && (
+            <ul className="list">
+              {t.familien
+                .map((id) => d.familie.get(id))
+                .filter((f): f is Familie => !!f)
+                .map(familienZeile)}
+            </ul>
+          )}
         </section>
       ))}
 
