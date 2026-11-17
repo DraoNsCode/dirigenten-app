@@ -12,7 +12,8 @@ import { ladeLogo, type Logo } from './logo'
 
 // Folien fürs Einsingen als PDF (16:9). Eine Folie je ausgewählter Grundübung oder Stufe: oben links der Folientitel, darüber die Dachzeile
 // mit der Phase, darunter die Noten, eine Textzeile (mittig) oder Stichpunkte (linksbündig am linken Rand);
-// links unten die Fußzeile „EINSINGEN“. Keine weiteren Angaben. Zwei gleiche Folien hintereinander werden eine.
+// links unten die Fußzeile „CHORPROBE · 19. NOVEMBER 2026“ mit dem Datum der Deckfolie (Daniel, 17.11.2026; vorher „EINSINGEN“,
+// so muss keine Übung fest dem Einsingen oder einem anderen Teil der Probe zugeordnet sein). Keine weiteren Angaben. Zwei gleiche Folien hintereinander werden eine.
 // System aus der Gemeinde-Vorlage abgeleitet (helles Design, Variante B): Hellgrund, Dunkeltext,
 // Titel in Cormorant Garamond an der Stelle der Überschrift der Vorlage, Dachzeile und Fußzeile in Barlow Condensed.
 // Größen: Daniel, 11.11.2026 (Titel 37, Stichpunkte 26, Dachzeile 12, Fußzeile 10, Noten höchstens 1,6-fach).
@@ -48,7 +49,7 @@ export type Struktur = {
   goldlinie?: boolean
   /** feine Trennlinie über die ganze Breite unter dem Titel */
   trennlinie?: boolean
-  /** Fußzeile „Einsingen“ links unten */
+  /** Fußzeile „Chorprobe · Datum“ links unten */
   fusszeile?: boolean
 }
 
@@ -117,7 +118,7 @@ function passend(doc: JsPDF, t: string, breite: number, groesse: number, min: nu
   return w <= breite ? groesse : Math.max(min, Math.floor((groesse * breite) / w))
 }
 
-function titelZeichnen(doc: JsPDF, f: Folie, g: Groessen, s: Struktur) {
+function titelZeichnen(doc: JsPDF, f: Folie, g: Groessen, s: Struktur, fuss: string) {
   const titel = f.titel
   if (s.dachzeile && f.phase) {
     const groesse = g.dachzeile
@@ -143,9 +144,12 @@ function titelZeichnen(doc: JsPDF, f: Folie, g: Groessen, s: Struktur) {
     doc.setFont(SCHMAL, 'normal')
     doc.setFontSize(groesse)
     doc.setTextColor(FARBE.grau)
-    doc.text('EINSINGEN', RAND, H - 30, { align: 'left', baseline: 'alphabetic', charSpace: groesse * 0.16 })
+    doc.text(fuss, RAND, H - 30, { align: 'left', baseline: 'alphabetic', charSpace: groesse * 0.16 })
   }
 }
+
+/** Was jede Folie zum Zeichnen braucht: Werkzeuge, Arbeitsbereich und der Text der Fußzeile */
+type Mittel = { svg2pdf: Svg2pdf; abcjs: Abcjs; halter: HTMLElement; fuss: string }
 
 /** Eine Textzeile groß und mittig in der Fläche */
 function textZeichnen(doc: JsPDF, text: string, g: Groessen, s: Struktur) {
@@ -226,11 +230,11 @@ async function folieGleichGross(
   g: Groessen,
   s: Struktur,
   vermerk: string | undefined,
-  mittel: { svg2pdf: Svg2pdf; abcjs: Abcjs; halter: HTMLElement },
+  mittel: Mittel,
 ) {
   doc.setFillColor(FARBE.grund)
   doc.rect(0, 0, B, H, 'F')
-  titelZeichnen(doc, f, g, s)
+  titelZeichnen(doc, f, g, s, mittel.fuss)
   const oben = obenVon(g, s)
   const unten = untenVon(s)
   const breite = B - 2 * RAND
@@ -270,6 +274,10 @@ async function folieGleichGross(
 // ---------- Deckfolie ----------
 
 export type Deckfolie = { titel: string; datum: Date }
+
+/** Fußzeile jeder Übungsfolie: „CHORPROBE · 19. NOVEMBER 2026“ (Titel und Datum der Deckfolie) */
+const fusszeile = (d: Deckfolie) =>
+  `${d.titel} · ${d.datum.toLocaleDateString('de-DE', { day: 'numeric', month: 'long', year: 'numeric' })}`.toLocaleUpperCase('de')
 
 /** „DONNERSTAG, 19. NOVEMBER 2026“ */
 const datumZeile = (d: Date) =>
@@ -335,11 +343,11 @@ async function folieZeichnen(
   g: Groessen,
   s: Struktur,
   vermerk: string | undefined,
-  mittel: { svg2pdf: Svg2pdf; abcjs: Abcjs; halter: HTMLElement },
+  mittel: Mittel,
 ) {
   doc.setFillColor(FARBE.grund)
   doc.rect(0, 0, B, H, 'F')
-  titelZeichnen(doc, f, g, s)
+  titelZeichnen(doc, f, g, s, mittel.fuss)
   if (f.inhalt.art === 'noten') {
     const svg = notenFuerPdf(mittel.abcjs, mittel.halter, f.inhalt.abc)
     const oben = obenVon(g, s)
@@ -377,7 +385,7 @@ export async function folienPdf(
 
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [B, H], compress: true })
   schriftenAnmelden(doc, schriften)
-  doc.setProperties({ title: 'Einsingen', creator: 'Dirigenten-App' })
+  doc.setProperties({ title: `${deckfolie.titel} ${deckfolie.datum.toLocaleDateString('de-DE')}`, creator: 'Dirigenten-App' })
 
   // Unsichtbarer Arbeitsbereich, in dem abcjs zeichnet und misst
   const halter = document.createElement('div')
@@ -392,7 +400,7 @@ export async function folienPdf(
       doc.addPage([B, H], 'landscape')
       fortschritt?.(i + 2, m)
       const zeichne = folien[i].gestaltung === 'titel-oben' ? folieZeichnen : folieGleichGross
-      await zeichne(doc, folien[i].f, folien[i].groessen, folien[i].struktur ?? {}, folien[i].vermerk, { svg2pdf, abcjs, halter })
+      await zeichne(doc, folien[i].f, folien[i].groessen, folien[i].struktur ?? {}, folien[i].vermerk, { svg2pdf, abcjs, halter, fuss: fusszeile(deckfolie) })
       halter.replaceChildren()
     }
   } finally {

@@ -103,7 +103,7 @@ export default function NotenAnsicht({
         if (!aktiv || !ziel.current) return
         stoppenWenn(spielId.current)
         try {
-          const tune = notenZeichnen(abcjs, ziel.current, abc, zeilenbreite(breite), undefined, undefined, { kurzBis: KURZ_APP })
+          const tune = notenZeichnen(abcjs, ziel.current, abc, zeilenbreite(breite), undefined, undefined, { kurzBis: KURZ_APP, kompakt: true })
           gezeichnet.current = { abcjs, tune }
           setFehler(false)
         } catch {

@@ -66,10 +66,13 @@ export function zuschneiden(svg: SVGSVGElement | null) {
  * abcjs bricht zu lange Zeilen um; danach werden die Takte gleichmäßig auf die Zeilen verteilt,
  * damit keine fast leere letzte Zeile entsteht.
  */
+/** Wie abcjs zu lange Zeilen umbricht (Abstände als Vielfache des natürlichen Abstands) */
+export const UMBRUCH = { minSpacing: 1.4, maxSpacing: 2.4, preferredMeasuresPerLine: 8 }
+
 export function zeichnen(abcjs: Abcjs, ziel: HTMLElement, abc: string, breite: number, farbe = 'currentColor'): TuneObject {
   // selectTypes: false – angetippte Noten werden nicht ausgewählt (abcjs färbt sie sonst rot)
   const grund = { add_classes: true, staffwidth: breite, minPadding: 8, paddingtop: 0, paddingbottom: 0, paddingleft: 0, paddingright: 0, foregroundColor: farbe, selectTypes: false as const }
-  let tune = abcjs.renderAbc(ziel, abc, { ...grund, wrap: { minSpacing: 1.4, maxSpacing: 2.4, preferredMeasuresPerLine: 8 } })[0]
+  let tune = abcjs.renderAbc(ziel, abc, { ...grund, wrap: UMBRUCH })[0]
   const zeilen = (tune.lines ?? []).filter((l) => l.staff)
   let takte = 0
   for (const z of zeilen) for (const x of z.staff?.[0]?.voices?.[0] ?? []) if ((x as { el_type?: string }).el_type === 'bar') takte++

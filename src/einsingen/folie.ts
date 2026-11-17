@@ -24,5 +24,5 @@ export function naechsteProbe(): Date {
   return start
 }
 
-/** „Einsingen 2026-11-12.pdf“ – nach der nächsten Probe benannt */
-export const folienDateiname = () => `Einsingen ${iso(naechsteProbe())}.pdf`
+/** „Chorprobe 2026-11-19.pdf“ – nach der nächsten Probe benannt, wie Deckfolie und Fußzeile (Daniel, 17.11.2026) */
+export const folienDateiname = () => `Chorprobe ${iso(naechsteProbe())}.pdf`

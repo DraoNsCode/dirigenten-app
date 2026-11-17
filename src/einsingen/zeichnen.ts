@@ -1,5 +1,5 @@
 import type { TuneObject } from 'abcjs'
-import { ladeAbcjs, zeichnen, zuschneiden } from '../uebungen/Noten'
+import { UMBRUCH, ladeAbcjs, zeichnen, zuschneiden } from '../uebungen/Noten'
 
 // Noten fürs Einsingen zeichnen (App und Folien):
 // - Kurze Übungen werden nie umgebrochen: bis drei Takte (drei Takte brachen am Handy in 2 + 1 um; in der Foliengestaltung vom 11.11. bis zwei);
@@ -8,12 +8,23 @@ import { ladeAbcjs, zeichnen, zuschneiden } from '../uebungen/Noten'
 // - Silben und Ziffern stehen mittig unter ihrem Notenkopf (abcjs setzt sie um eine halbe Kopfbreite zu weit links).
 // - Berührt eine Silbe einen Bogen, eine Hilfslinie oder eine tiefe Note, rückt die ganze Silbenzeile tiefer (%%vocalspace).
 // - Die Tempoangabe (Q:) wird nicht gezeigt.
+// - In der App (kompakt): Längere Übungen werden versuchsweise 1,2- und 1,5-mal so breit gezeichnet und dann auf die Bildschirmbreite
+//   verkleinert, aber nur, wenn dabei Zeilen wegfallen (Daniel, 17.11.2026: „lieber kleiner und kompakt“). Die Folien bleiben, wie sie sind.
 
 export type Abcjs = Awaited<ReturnType<typeof ladeAbcjs>>
 
 /** Bis zu so vielen Takten mit Noten wird eine Übung nie umgebrochen, sondern verkleinert: Folien vom 11.11. und App bzw. Folien seit 14.11. */
 export const KURZ_FOLIE = 2
 export const KURZ_APP = 3
+
+/** Breiten, mit denen eine längere Übung in der App versuchsweise gezeichnet wird (1,5-fach: etwa 70 % der üblichen Größe) */
+const KOMPAKT = [1.2, 1.5]
+
+/** Wie viele Zeilen abcjs bei dieser Breite braucht (ein Probedurchgang ohne Feinheiten) */
+function zeilenBei(abcjs: Abcjs, ziel: HTMLElement, text: string, breite: number): number {
+  const grund = { staffwidth: breite, minPadding: 8, paddingtop: 0, paddingbottom: 0, paddingleft: 0, paddingright: 0, wrap: UMBRUCH }
+  return (abcjs.renderAbc(ziel, text, grund)[0]?.lines ?? []).filter((l) => l.staff).length
+}
 
 /** Mindestabstand zwischen Silben und den Zeichen darüber (SVG-Einheiten) */
 const ABSTAND = 7
@@ -119,10 +130,25 @@ export function notenZeichnen(
   breite: number,
   schrift = 'Barlow',
   farbe = 'currentColor',
-  /** kurzBis: bis zu so vielen Takten kein Umbruch; natuerlich: kurze Übungen behalten ihren natürlichen Notenabstand */
-  { kurzBis = KURZ_FOLIE, natuerlich = false }: { kurzBis?: number; natuerlich?: boolean } = {},
+  /** kurzBis: bis zu so vielen Takten kein Umbruch; natuerlich: kurze Übungen behalten ihren natürlichen Notenabstand;
+   *  kompakt: längere Übungen breiter zeichnen und verkleinern, wenn dadurch Zeilen wegfallen (nur App) */
+  { kurzBis = KURZ_FOLIE, natuerlich = false, kompakt = false }: { kurzBis?: number; natuerlich?: boolean; kompakt?: boolean } = {},
 ): TuneObject {
   const kurz = taktAnzahl(abcjs, abc) <= kurzBis
+  if (!kurz && kompakt) {
+    const probe = abcZumZeigen(abc, schrift)
+    let zeilen = zeilenBei(abcjs, ziel, probe, breite)
+    const grundbreite = breite
+    for (const f of KOMPAKT) {
+      if (zeilen <= 1) break
+      const b = Math.round(grundbreite * f)
+      const z = zeilenBei(abcjs, ziel, probe, b)
+      if (z < zeilen) {
+        breite = b
+        zeilen = z
+      }
+    }
+  }
   const malen = (abstand: number): TuneObject => {
     const text = abcZumZeigen(abc, schrift, abstand, natuerlich && kurz)
     if (!kurz) return zeichnen(abcjs, ziel, text, breite, farbe)
