@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, type RefObject } from 'react'
 import type { TuneObject } from 'abcjs'
 import { istRhythmus, schlag } from '../uebungen/abc'
-import { metronom, spielen, stoppen, stoppenWenn, type Ereignis } from '../uebungen/klang'
+import { metronom, spielen, stoppen, stoppenWenn, type Ereignis, type Verlauf } from '../uebungen/klang'
 import { ladeAbcjs, zeilenbreite } from '../uebungen/Noten'
 import { KURZ_APP, notenZeichnen, type Abcjs } from './zeichnen'
 
@@ -36,22 +36,74 @@ function useBreite(ref: RefObject<HTMLElement | null>): number {
   return breite
 }
 
-type Ton = { ton: number; start: number; startW: number; dauer: number; staerke: number }
+type Ton = { ton: number; start: number; startW: number; dauer: number; staerke: number; verlauf?: Verlauf }
 type AudioEreignis = { cmd: string; pitch: number; start: number; duration: number; volume?: number; endType?: string }
 
 /** Töne eines gezeichneten Stücks; `ganzeSek` = Dauer einer ganzen Note in Sekunden. Staccato klingt kurz. */
+/** Lautstärke der Dynamikzeichen beim Anhören, als Anteil der vollen Stärke */
+const DYNAMIK: Record<string, number> = { pppp: 0.2, ppp: 0.25, pp: 0.32, p: 0.45, mp: 0.62, mf: 0.8, f: 1, ff: 1.2, fff: 1.35, ffff: 1.5 }
+
+/**
+ * Lautstärke über die Zeit (in ganzen Noten) aus Dynamikzeichen (p, f …) und Gabeln (Crescendo, Decrescendo);
+ * null, wenn die Noten keine Dynamik haben. Eine Gabel führt zum Zeichen an ihrem Ende, ohne Zeichen eine Stufe weiter.
+ */
+function dynamik(tune: TuneObject): { stufe: (t: number) => number; grenzen: number[] } | null {
+  type El = { el_type?: string; duration?: number; decoration?: string[] }
+  const marken: { t: number; l: number }[] = []
+  const gabeln: { von: number; bis: number; auf: boolean }[] = []
+  const offen: Record<string, number> = {}
+  let t = 0
+  for (const zeile of tune.lines ?? []) {
+    for (const el of (zeile.staff?.[0]?.voices?.[0] ?? []) as El[]) {
+      for (const d of el.decoration ?? []) {
+        const art = d.slice(0, -1)
+        if (d in DYNAMIK) marken.push({ t, l: DYNAMIK[d] })
+        else if (d === 'crescendo(' || d === 'diminuendo(') offen[art] = t
+        else if ((d === 'crescendo)' || d === 'diminuendo)') && art in offen) {
+          gabeln.push({ von: offen[art], bis: t, auf: art === 'crescendo' })
+          delete offen[art]
+        }
+      }
+      if (el.el_type === 'note') t += el.duration ?? 0
+    }
+  }
+  if (!marken.length && !gabeln.length) return null
+  const ohneGabel = (x: number) => marken.reduce((l, m) => (m.t <= x + 1e-9 ? m.l : l), 0.8)
+  const stufe = (x: number) => {
+    for (const g of gabeln) {
+      if (x <= g.von || x >= g.bis) continue
+      const a = ohneGabel(g.von)
+      const ziel = marken.find((m) => Math.abs(m.t - g.bis) < 1e-9)
+      const b = ziel ? ziel.l : a * (g.auf ? 1.5 : 0.65)
+      return a + ((b - a) * (x - g.von)) / (g.bis - g.von)
+    }
+    return ohneGabel(x)
+  }
+  const grenzen = [...new Set([...marken.map((m) => m.t), ...gabeln.flatMap((g) => [g.von, g.bis])])].sort((a, b) => a - b)
+  return { stufe, grenzen }
+}
+
 function toene(tune: TuneObject, ganzeSek: number): Ton[] {
   const r: Ton[] = []
+  const dyn = dynamik(tune)
   for (const spur of tune.setUpAudio({}).tracks) {
     for (const e of spur as AudioEreignis[]) {
       if (e.cmd !== 'note') continue
       const dauer = e.duration * ganzeSek
+      // Mit Dynamik: Stärke am Tonbeginn und Verlauf bis zum Tonende (auch über Haltebögen hinweg)
+      let verlauf: Verlauf | undefined
+      if (dyn) {
+        const ende = e.start + e.duration
+        const innen = dyn.grenzen.filter((g) => g > e.start + 1e-9 && g < ende - 1e-9).flatMap((g) => [g - 1e-4, g])
+        verlauf = [e.start, ...innen, ende - 1e-6].map((x) => ({ t: (x - e.start) * ganzeSek, staerke: 100 * dyn.stufe(x) }))
+      }
       r.push({
         ton: e.pitch,
         start: e.start * ganzeSek,
         startW: e.start,
         dauer: e.endType === 'staccato' ? Math.min(dauer * 0.4, 0.25) : dauer,
-        staerke: e.volume || 90,
+        staerke: verlauf ? verlauf[0].staerke : e.volume || 90,
+        verlauf,
       })
     }
   }

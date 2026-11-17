@@ -2,10 +2,13 @@
 // Er braucht keine Klangdateien. Es spielt immer nur eine Sache; Neues beendet das Laufende.
 
 export type Ereignis =
-  | { ton: number; start: number; dauer: number; staerke?: number }
+  | { ton: number; start: number; dauer: number; staerke?: number; verlauf?: Verlauf }
   | { schlag: 'metronom' | 'sprechen' | 'klatschen'; staerke: number; start: number; dauer?: number }
 
 export type Marke = { ms: number }
+
+/** Lautstärke innerhalb eines Tons: Zeitpunkte (Sekunden ab Tonbeginn) mit Stärke wie `staerke` (Crescendo, Decrescendo) */
+export type Verlauf = { t: number; staerke: number }[]
 
 type Laufend = { id: number; aus: GainNode; timer?: number; raf?: number; beimEnde?: () => void }
 
@@ -32,15 +35,23 @@ const hz = (midi: number) => 440 * Math.pow(2, (midi - 69) / 12)
 /**
  * Gehaltener, stimmähnlicher Ton: weicher Einsatz, gleichbleibend bis zum Notenende, kurzes Ausklingen.
  * Folgetöne überlappen das Ausklingen, so klingt eine gebundene Linie ohne Lücke.
+ * Mit `verlauf` ändert sich die Lautstärke während des Tons von Punkt zu Punkt (Dynamik der neuen Übungsansicht).
  */
-function ton(ac: AudioContext, aus: AudioNode, midi: number, t0: number, dauer: number, staerke: number) {
+function ton(ac: AudioContext, aus: AudioNode, midi: number, t0: number, dauer: number, staerke: number, verlauf?: Verlauf) {
   const f = hz(midi)
   const ende = t0 + Math.max(dauer, 0.12)
   const spitze = 0.22 * (staerke / 100)
   const g = ac.createGain()
   g.gain.setValueAtTime(0.0001, t0)
   g.gain.exponentialRampToValueAtTime(spitze, t0 + 0.035)
-  g.gain.setTargetAtTime(spitze * 0.8, t0 + 0.035, 0.12)
+  if (verlauf && verlauf.length > 1) {
+    for (const p of verlauf) {
+      const zeit = t0 + Math.max(p.t, 0.06)
+      if (zeit <= ende) g.gain.linearRampToValueAtTime(0.22 * (p.staerke / 100) * 0.8, zeit)
+    }
+  } else {
+    g.gain.setTargetAtTime(spitze * 0.8, t0 + 0.035, 0.12)
+  }
   g.gain.setTargetAtTime(0.0001, ende, 0.035)
   const tp = ac.createBiquadFilter()
   tp.type = 'lowpass'
@@ -144,7 +155,7 @@ export function spielen<M extends Marke>(
   let letzte = 0
   for (const e of ereignisse) {
     if ('schlag' in e) schlag(ac, aus, t0 + e.start, e.staerke, e.schlag)
-    else ton(ac, aus, e.ton, t0 + e.start, e.dauer, e.staerke ?? 90)
+    else ton(ac, aus, e.ton, t0 + e.start, e.dauer, e.staerke ?? 90, e.verlauf)
     letzte = Math.max(letzte, e.start + (e.dauer ?? 0.1))
   }
   const ich: Laufend = { id: naechsteId++, aus, beimEnde: optionen.beimEnde }

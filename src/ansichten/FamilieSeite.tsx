@@ -22,6 +22,9 @@ function folienzeile(f: Folie, mitNoten: boolean): string {
   return [f.titel, text, mitNoten ? 'Noten' : undefined].filter(Boolean).join(' · ')
 }
 
+/** Anführungszeichen in der Ansage werden halbe (‚no‘), weil die Ansage selbst in „…“ steht */
+const innenHalb = (s: string) => s.replace(/„/g, '‚').replace(/“/g, '‘')
+
 /** Ansage, „Gelingt, wenn“ und typischer Fehler – jeweils nur, wenn angegeben */
 function Durchfuehrung({ a }: { a: Angaben }) {
   return (
@@ -29,7 +32,7 @@ function Durchfuehrung({ a }: { a: Angaben }) {
       {a.ansage && (
         <div className="th-ansage">
           <span className="th-marke">Ansage</span>
-          <p>„{a.ansage}“</p>
+          <p>„{innenHalb(a.ansage)}“</p>
         </div>
       )}
       {!!a.gelingt?.length && (
