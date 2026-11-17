@@ -10,7 +10,8 @@ import { KURZ_APP, notenZeichnen, type Abcjs } from './zeichnen'
 // Ein Metronom zum Zuschalten gibt es nur, wo `mitMetronom` gesetzt ist (Übungen, bei denen es auf genaue Längen ankommt).
 // Bei zwei Stimmen (Frauen und Männer in zwei verbundenen Notenzeilen) spielt „Ausgangston“ den ersten Ton jeder Stimme,
 // die gleich zu Beginn singt, nacheinander von oben nach unten; wer später einsetzt, findet seinen Ton aus der Musik.
-// „Anhören“ spielt beide Stimmen zusammen.
+// „Anhören“ spielt beide Stimmen zusammen. Noten, die nur im Kopf gesungen werden (Silbe in Klammern, „(2)“), bleiben dabei stumm;
+// die Markierung läuft über sie hinweg.
 // Das Abspieltempo steht als Q:-Zeile in den ABC-Noten und wird nicht angezeigt.
 
 /** Ohne Q:-Zeile wird mit diesem Tempo abgespielt (Schläge pro Minute) */
@@ -97,12 +98,40 @@ function dynamik(tune: TuneObject): { stufe: (t: number) => number; grenzen: num
   return { stufe, grenzen }
 }
 
+/**
+ * Noten, die nur im Kopf gesungen werden (Silbe in Klammern, „(2)“): Spur (Stimme in der Reihenfolge ihres Auftretens)
+ * und Beginn in ganzen Noten, als Schlüssel „Spur:Beginn“
+ */
+function imKopf(tune: TuneObject): Set<string> {
+  type El = { el_type?: string; duration?: number; lyric?: { syllable?: string }[] }
+  const r = new Set<string>()
+  const stimmen: string[] = []
+  const zeit = new Map<string, number>()
+  for (const zeile of tune.lines ?? []) {
+    ;(zeile.staff ?? []).forEach((system, s) =>
+      (system.voices ?? []).forEach((stimme, v) => {
+        const k = `${s}.${v}`
+        if (!stimmen.includes(k)) stimmen.push(k)
+        let t = zeit.get(k) ?? 0
+        for (const el of stimme as El[]) {
+          if (el.el_type !== 'note') continue
+          if (/^\(.*\)$/.test(el.lyric?.[0]?.syllable ?? '')) r.add(`${stimmen.indexOf(k)}:${t.toFixed(6)}`)
+          t += el.duration ?? 0
+        }
+        zeit.set(k, t)
+      }),
+    )
+  }
+  return r
+}
+
 function toene(tune: TuneObject, ganzeSek: number): Ton[] {
   const r: Ton[] = []
   const dyn = dynamik(tune)
-  for (const spur of tune.setUpAudio({}).tracks) {
+  const still = imKopf(tune)
+  for (const [spurNr, spur] of tune.setUpAudio({}).tracks.entries()) {
     for (const e of spur as AudioEreignis[]) {
-      if (e.cmd !== 'note') continue
+      if (e.cmd !== 'note' || still.has(`${spurNr}:${e.start.toFixed(6)}`)) continue
       const dauer = e.duration * ganzeSek
       // Mit Dynamik: Stärke am Tonbeginn und Verlauf bis zum Tonende (auch über Haltebögen hinweg)
       let verlauf: Verlauf | undefined

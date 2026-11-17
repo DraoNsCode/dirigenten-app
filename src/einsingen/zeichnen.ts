@@ -15,6 +15,8 @@ import { UMBRUCH, ladeAbcjs, zeichnen, zuschneiden } from '../uebungen/Noten'
 // - Zwei Stimmen (Frauen im Violin-, Männer im Bassschlüssel) stehen in zwei verbundenen Notenzeilen mit Klammer und durchgehenden
 //   Taktstrichen (Daniel, 17.11.2026: „wie im Liederbuch“); in den Noten „%%score {Frauen | Maenner}“. Eine Notenzeile mit beiden
 //   Systemen ist eine Zeile (eine Gruppe abcjs-staff-wrapper).
+// - Steht die Silbe einer Note in Klammern („(2)“), wird die Note nur im Kopf gesungen: Sie steht etwas heller da, ihre Ziffer
+//   ohne Klammern (Daniel, 17.11.2026: „lieber Nebentöne etwas heller notieren“). Beim Anhören bleibt sie stumm (NotenAnsicht).
 // - In der App (kompakt): Längere Übungen werden versuchsweise 1,2- und 1,5-mal so breit gezeichnet und dann auf die Bildschirmbreite
 //   verkleinert, aber nur, wenn dabei Zeilen wegfallen (Daniel, 17.11.2026: „lieber kleiner und kompakt“). Die Folien bleiben, wie sie sind.
 
@@ -277,6 +279,20 @@ function variantenSetzen(tune: TuneObject, gruppen: string[][], schrift: string)
   })
 }
 
+/** Deckkraft der Noten, die nur im Kopf gesungen werden */
+const IM_KOPF = 0.4
+
+/** Noten mit einer Silbe in Klammern („(2)“) werden nur im Kopf gesungen: etwas heller, die Ziffer ohne Klammern */
+function imKopfHeller(svg: SVGSVGElement) {
+  for (const t of svg.querySelectorAll<SVGTextElement>('text.abcjs-lyric')) {
+    if (!/^\(.*\)$/.test((t.textContent ?? '').trim())) continue
+    // abcjs schreibt die Silbe teils in tspan-Elemente; die Klammern verschwinden überall, die Mitte bleibt (text-anchor: middle)
+    const teile = [...t.querySelectorAll('tspan')]
+    for (const e of teile.length ? teile : [t]) e.textContent = (e.textContent ?? '').replace(/[()]/g, '')
+    t.closest('g.abcjs-note')?.setAttribute('opacity', String(IM_KOPF))
+  }
+}
+
 /** Mindestabstand zwischen zwei Notenzeilen: vom Untersten der einen (Silben) bis zum Obersten der nächsten (SVG-Einheiten) */
 const ZEILEN_ABSTAND = 12
 
@@ -385,6 +401,7 @@ export function notenZeichnen(
       if (svg) silbenMittig(svg)
     }
     if (svg) {
+      imKopfHeller(svg)
       gabelnAbsetzen(svg)
       atemzeichenSetzen(svg)
       dynamikSenken(svg)
