@@ -201,10 +201,20 @@ function notenFuerPdf(abcjs: Abcjs, halter: HTMLElement, abc: string, zeilenbrei
 
 type Svg2pdf = typeof import('svg2pdf.js').svg2pdf
 
-async function svgEinsetzen(svg2pdf: Svg2pdf, doc: JsPDF, svg: SVGSVGElement, x: number, y: number, breite: number, hoehe: number, maxSkala: number) {
+/** Maße der gezeichneten Noten (viewBox, sonst Rahmen) */
+function svgMasse(svg: SVGSVGElement): { w: number; h: number } {
   const vb = svg.viewBox.baseVal
-  const w = vb && vb.width ? vb.width : svg.getBBox().width
-  const h = vb && vb.height ? vb.height : svg.getBBox().height
+  return { w: vb && vb.width ? vb.width : svg.getBBox().width, h: vb && vb.height ? vb.height : svg.getBBox().height }
+}
+
+/** Vergrößerung, mit der die Noten in den Rahmen passen (höchstens `maxSkala`) */
+function skalaVon(svg: SVGSVGElement, breite: number, hoehe: number, maxSkala: number): number {
+  const { w, h } = svgMasse(svg)
+  return w && h ? Math.min(breite / w, hoehe / h, maxSkala) : 0
+}
+
+async function svgEinsetzen(svg2pdf: Svg2pdf, doc: JsPDF, svg: SVGSVGElement, x: number, y: number, breite: number, hoehe: number, maxSkala: number) {
+  const { w, h } = svgMasse(svg)
   if (!w || !h) return
   const skala = Math.min(breite / w, hoehe / h, maxSkala)
   const bw = w * skala
@@ -240,8 +250,20 @@ async function folieGleichGross(
   const breite = B - 2 * RAND
   if (f.inhalt.art === 'noten') {
     // Zeilenbreite so, dass die Noten bei fester Vergrößerung die Folienbreite füllen; bis drei Takte kein Umbruch
-    const svg = notenFuerPdf(mittel.abcjs, mittel.halter, f.inhalt.abc, Math.floor(breite / g.noten), { kurzBis: KURZ_APP, natuerlich: true })
-    if (svg) await svgEinsetzen(mittel.svg2pdf, doc, svg, RAND, oben, breite, unten - oben, g.noten)
+    const zeile = Math.floor(breite / g.noten)
+    const hoehe = unten - oben
+    let svg = notenFuerPdf(mittel.abcjs, mittel.halter, f.inhalt.abc, zeile, { kurzBis: KURZ_APP, natuerlich: true })
+    // Muss die umbrochene Fassung wegen ihrer Höhe deutlich kleiner gezeichnet werden als dieselben Noten in einer Zeile,
+    // steht die Übung in einer Zeile (etwa drei kurze Rhythmen mit Varianten darunter). Sonst bleibt es beim Umbruch.
+    if (svg && svg.querySelectorAll('g.abcjs-staff-wrapper').length > 1) {
+      const { w, h } = svgMasse(svg)
+      const umbrochen = skalaVon(svg, breite, hoehe, g.noten)
+      if (hoehe / h < Math.min(breite / w, g.noten)) {
+        const eineZeile = notenFuerPdf(mittel.abcjs, mittel.halter, f.inhalt.abc, zeile, { kurzBis: Infinity, natuerlich: true })
+        if (eineZeile && skalaVon(eineZeile, breite, hoehe, g.noten) > umbrochen * 1.15) svg = eineZeile
+      }
+    }
+    if (svg) await svgEinsetzen(mittel.svg2pdf, doc, svg, RAND, oben, breite, hoehe, g.noten)
   } else if (f.inhalt.art === 'text') {
     const text = f.inhalt.text
     doc.setFont(lateinisch(text) ? TEXT : NOTEN, 'bold')

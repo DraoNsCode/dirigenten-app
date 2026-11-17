@@ -11,6 +11,7 @@ import { UMBRUCH, ladeAbcjs, zeichnen, zuschneiden } from '../uebungen/Noten'
 // - Gabeln halten kleinen Abstand zu p, f usw. und zueinander; Atemzeichen stehen nach der Note, kurz vor der nächsten;
 //   Dynamik schwebt nicht unnötig hoch über dem System; zwischen zwei Notenzeilen bleibt Luft, auch wenn über der
 //   zweiten eine Beschriftung steht (Daniel, 17.11.2026: Gabeln mit Abstand, „sauber umgesetzte optische Darstellung“).
+// - Eine Zeile „%Varianten: …“ in den Noten: andere Wörter auf denselben Rhythmus, klein und heller unter dem Wort ihres Abschnitts.
 // - In der App (kompakt): Längere Übungen werden versuchsweise 1,2- und 1,5-mal so breit gezeichnet und dann auf die Bildschirmbreite
 //   verkleinert, aber nur, wenn dabei Zeilen wegfallen (Daniel, 17.11.2026: „lieber kleiner und kompakt“). Die Folien bleiben, wie sie sind.
 
@@ -216,6 +217,63 @@ function dynamikSenken(svg: SVGSVGElement) {
   }
 }
 
+/** „%Varianten: Hosianna, Maranatha | Gnade, Segen | …“ – je Abschnitt zwischen Doppelstrichen eine Gruppe anderer Wörter */
+function variantenLesen(abc: string): string[][] {
+  const m = abc.match(/^%\s*Varianten:\s*(.*)$/m)
+  return m ? m[1].split('|').map((g) => g.split(',').map((w) => w.trim()).filter(Boolean)) : []
+}
+
+/** Schriftgröße der Varianten (SVG-Einheiten; die Silben haben 13 pt, also gut 17) */
+const VARIANTE_GROESSE = 15
+
+/**
+ * Varianten sind andere Wörter auf denselben Rhythmus. Sie stehen kleiner und heller unter dem ausgeschriebenen Wort
+ * ihres Abschnitts, ein Wort je Zeile (Daniel, 17.11.2026: „Ein Wort unter Noten ausschreiben, andere Worte als Varianten“).
+ */
+function variantenSetzen(tune: TuneObject, gruppen: string[][], schrift: string) {
+  if (!gruppen.some((g) => g.length)) return
+  type El = { el_type?: string; rest?: unknown; type?: string; abselem?: { elemset?: Element[] } }
+  // Noten je Abschnitt; ein Doppelstrich („||“, „|]“) beendet einen Abschnitt
+  const abschnitte: Element[][] = [[]]
+  for (const zeile of tune.lines ?? [])
+    for (const el of (zeile.staff?.[0]?.voices?.[0] ?? []) as El[]) {
+      if (el.el_type === 'bar' && /^bar_thin_th(in|ick)$/.test(el.type ?? '')) abschnitte.push([])
+      else if (el.el_type === 'note' && !el.rest && el.abselem?.elemset?.[0]) abschnitte[abschnitte.length - 1].push(el.abselem.elemset[0])
+    }
+  gruppen.forEach((woerter, i) => {
+    const noten = abschnitte[i]
+    if (!woerter.length || !noten?.length) return
+    const zeile = zeileVon(noten[0])
+    const huelle = noten[0].closest<SVGGElement>('g.abcjs-staff-wrapper')
+    if (!zeile || !huelle) return
+    const koepfe = noten
+      .filter((n) => zeileVon(n) === zeile)
+      .flatMap((n) => [...n.querySelectorAll<SVGGraphicsElement>('.abcjs-notehead')])
+      .map((k) => k.getBBox())
+    const silben = [...huelle.querySelectorAll<SVGTextElement>('text.abcjs-lyric')]
+    if (!koepfe.length || !silben.length) return
+    const mitte = (Math.min(...koepfe.map((b) => b.x)) + Math.max(...koepfe.map((b) => b.x + b.width))) / 2
+    let y = Math.max(...silben.map((t) => t.getBBox().y + t.getBBox().height)) + 3
+    for (const wort of woerter) {
+      y += VARIANTE_GROESSE * 1.1
+      const t = document.createElementNS('http://www.w3.org/2000/svg', 'text')
+      t.setAttribute('x', mitte.toFixed(2))
+      t.setAttribute('y', y.toFixed(2))
+      t.setAttribute('text-anchor', 'middle')
+      t.setAttribute('font-family', schrift)
+      t.setAttribute('font-size', String(VARIANTE_GROESSE))
+      t.setAttribute('font-weight', 'normal')
+      t.setAttribute('fill', silben[0].getAttribute('fill') ?? 'currentColor')
+      t.setAttribute('fill-opacity', '0.62')
+      // abcjs gibt den Gruppen eine Kontur; ohne „stroke=none“ erbt der Text sie und wirkt fett und dunkel
+      t.setAttribute('stroke', 'none')
+      t.setAttribute('class', `abcjs-variante ${zeile}`)
+      t.textContent = wort
+      huelle.append(t)
+    }
+  })
+}
+
 /** Mindestabstand zwischen zwei Notenzeilen: vom Untersten der einen (Silben) bis zum Obersten der nächsten (SVG-Einheiten) */
 const ZEILEN_ABSTAND = 12
 
@@ -327,6 +385,7 @@ export function notenZeichnen(
       gabelnAbsetzen(svg)
       atemzeichenSetzen(svg)
       dynamikSenken(svg)
+      variantenSetzen(tune, variantenLesen(abc), schrift)
       zeilenAbstand(svg)
     }
     zuschneiden(svg)
