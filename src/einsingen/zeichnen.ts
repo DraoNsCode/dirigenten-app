@@ -2,14 +2,16 @@ import type { TuneObject } from 'abcjs'
 import { ladeAbcjs, zeichnen, zuschneiden } from '../uebungen/Noten'
 
 // Noten fürs Einsingen zeichnen (App und Folien):
-// - Kurze Übungen werden nie umgebrochen: auf den Folien bis zwei Takte, in der App bis drei (drei Takte brachen am Handy in 2 + 1 um); zu breite Zeilen werden verkleinert (CSS max-width bzw. Skalierung im PDF).
+// - Kurze Übungen werden nie umgebrochen: bis drei Takte (drei Takte brachen am Handy in 2 + 1 um; in der Foliengestaltung vom 11.11. bis zwei);
+//   zu breite Zeilen werden verkleinert (CSS max-width bzw. Skalierung im PDF). Takte, in denen nur Pausen stehen, zählen dabei nicht mit:
+//   Sie brauchen kaum Platz, und eine stille Strecke soll nicht über zwei Zeilen zerrissen werden (Daniel, 17.11.2026: Folie mit zwei Takten Pause).
 // - Silben und Ziffern stehen mittig unter ihrem Notenkopf (abcjs setzt sie um eine halbe Kopfbreite zu weit links).
 // - Berührt eine Silbe einen Bogen, eine Hilfslinie oder eine tiefe Note, rückt die ganze Silbenzeile tiefer (%%vocalspace).
 // - Die Tempoangabe (Q:) wird nicht gezeigt.
 
 export type Abcjs = Awaited<ReturnType<typeof ladeAbcjs>>
 
-/** Bis zu so vielen Takten wird eine Übung nie umgebrochen, sondern verkleinert: auf den Folien und in der App */
+/** Bis zu so vielen Takten mit Noten wird eine Übung nie umgebrochen, sondern verkleinert: Folien vom 11.11. und App bzw. Folien seit 14.11. */
 export const KURZ_FOLIE = 2
 export const KURZ_APP = 3
 
@@ -25,7 +27,7 @@ export function abcZumZeigen(abc: string, schrift = 'Barlow', silbenAbstand = 0,
   return abc.replace(/^Q:.*\n?/m, '').replace(/^(X:.*)$/m, `$1\n${kopf.join('\n')}`)
 }
 
-/** Anzahl der Takte mit Noten oder Pausen */
+/** Anzahl der Takte mit mindestens einer klingenden Note (Takte nur mit Pausen zählen nicht) */
 export function taktAnzahl(abcjs: Abcjs, abc: string): number {
   let n = 0
   try {
@@ -33,7 +35,7 @@ export function taktAnzahl(abcjs: Abcjs, abc: string): number {
       for (const stimme of zeile.staff?.[0]?.voices ?? []) {
         let inhalt = false
         for (const el of stimme as { el_type?: string }[]) {
-          if (el.el_type === 'note') inhalt = true
+          if (el.el_type === 'note' && !(el as { rest?: unknown }).rest) inhalt = true
           if (el.el_type === 'bar') {
             if (inhalt) n++
             inhalt = false
