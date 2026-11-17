@@ -8,6 +8,8 @@ import { KURZ_APP, notenZeichnen, type Abcjs } from './zeichnen'
 // Noten einer Grundübung oder Stufe: darüber ein Hinweis (falls vorhanden), darunter die Lageangabe,
 // dann „Ausgangston“ und „Anhören“ (mit mitlaufender Markierung). Kein Transponieren.
 // Ein Metronom zum Zuschalten gibt es nur, wo `mitMetronom` gesetzt ist (Übungen, bei denen es auf genaue Längen ankommt).
+// Bei zwei Stimmen (Frauen und Männer in zwei verbundenen Notenzeilen) spielt „Ausgangston“ den ersten Ton jeder Stimme,
+// nacheinander von oben nach unten; „Anhören“ spielt beide Stimmen zusammen.
 // Das Abspieltempo steht als Q:-Zeile in den ABC-Noten und wird nicht angezeigt.
 
 /** Ohne Q:-Zeile wird mit diesem Tempo abgespielt (Schläge pro Minute) */
@@ -121,6 +123,17 @@ function toene(tune: TuneObject, ganzeSek: number): Ton[] {
   return r.sort((a, b) => a.start - b.start)
 }
 
+/** Erster Ton jeder Stimme, von oben nach unten (einstimmig: ein Ton) */
+function anfangstoene(tune: TuneObject): number[] {
+  const r: number[] = []
+  for (const spur of tune.setUpAudio({}).tracks) {
+    let erster: AudioEreignis | null = null
+    for (const e of spur as AudioEreignis[]) if (e.cmd === 'note' && (!erster || e.start < erster.start)) erster = e
+    if (erster) r.push(erster.pitch)
+  }
+  return r.sort((a, b) => b - a)
+}
+
 /** Zeitpunkte (ms), zu denen Noten markiert werden */
 function notenMarken(abcjs: Abcjs, tune: TuneObject, viertelProMinute: number): { ms: number; els: Element[] }[] {
   try {
@@ -190,10 +203,10 @@ export default function NotenAnsicht({
   function ausgangston() {
     const g = gezeichnet.current
     if (!g) return
-    const t = toene(g.tune, ganzeSek)
+    const t = anfangstoene(g.tune)
     if (!t.length) return
     setLaeuft(false)
-    spielId.current = spielen([{ ton: t[0].ton, start: 0, dauer: 1.6 }])
+    spielId.current = spielen(t.length === 1 ? [{ ton: t[0], start: 0, dauer: 1.6 }] : t.map((ton, i) => ({ ton, start: i * 1.3, dauer: 1.15 })))
   }
 
   /** Was erklingt: Töne, bei Rhythmen Schläge (der erste im Takt betont) */

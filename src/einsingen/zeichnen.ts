@@ -12,6 +12,9 @@ import { UMBRUCH, ladeAbcjs, zeichnen, zuschneiden } from '../uebungen/Noten'
 //   Dynamik schwebt nicht unnötig hoch über dem System; zwischen zwei Notenzeilen bleibt Luft, auch wenn über der
 //   zweiten eine Beschriftung steht (Daniel, 17.11.2026: Gabeln mit Abstand, „sauber umgesetzte optische Darstellung“).
 // - Eine Zeile „%Varianten: …“ in den Noten: andere Wörter auf denselben Rhythmus, klein und heller unter dem Wort ihres Abschnitts.
+// - Zwei Stimmen (Frauen im Violin-, Männer im Bassschlüssel) stehen in zwei verbundenen Notenzeilen mit Klammer und durchgehenden
+//   Taktstrichen (Daniel, 17.11.2026: „wie im Liederbuch“); in den Noten „%%score {Frauen | Maenner}“. Eine Notenzeile mit beiden
+//   Systemen ist eine Zeile (eine Gruppe abcjs-staff-wrapper).
 // - In der App (kompakt): Längere Übungen werden versuchsweise 1,2- und 1,5-mal so breit gezeichnet und dann auf die Bildschirmbreite
 //   verkleinert, aber nur, wenn dabei Zeilen wegfallen (Daniel, 17.11.2026: „lieber kleiner und kompakt“). Die Folien bleiben, wie sie sind.
 
