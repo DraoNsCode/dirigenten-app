@@ -8,6 +8,9 @@ import { UMBRUCH, ladeAbcjs, zeichnen, zuschneiden } from '../uebungen/Noten'
 // - Silben und Ziffern stehen mittig unter ihrem Notenkopf (abcjs setzt sie um eine halbe Kopfbreite zu weit links).
 // - Berührt eine Silbe einen Bogen, eine Hilfslinie oder eine tiefe Note, rückt die ganze Silbenzeile tiefer (%%vocalspace).
 // - Die Tempoangabe (Q:) wird nicht gezeigt.
+// - Gabeln halten kleinen Abstand zu p, f usw. und zueinander; Atemzeichen stehen nach der Note, kurz vor der nächsten;
+//   Dynamik schwebt nicht unnötig hoch über dem System; zwischen zwei Notenzeilen bleibt Luft, auch wenn über der
+//   zweiten eine Beschriftung steht (Daniel, 17.11.2026: Gabeln mit Abstand, „sauber umgesetzte optische Darstellung“).
 // - In der App (kompakt): Längere Übungen werden versuchsweise 1,2- und 1,5-mal so breit gezeichnet und dann auf die Bildschirmbreite
 //   verkleinert, aber nur, wenn dabei Zeilen wegfallen (Daniel, 17.11.2026: „lieber kleiner und kompakt“). Die Folien bleiben, wie sie sind.
 
@@ -75,6 +78,159 @@ function silbenMittig(svg: SVGSVGElement) {
     const mitte = b.x + b.width / 2
     // abcjs setzt die Lage auch an die tspan-Elemente; beide anpassen
     note.querySelectorAll('text.abcjs-lyric, text.abcjs-lyric tspan').forEach((t) => t.setAttribute('x', mitte.toFixed(2)))
+  }
+}
+
+/** Abstand der Gabeln zu p, f usw. und zwischen zwei Gabeln, die aneinanderstoßen (SVG-Einheiten; eine Zwischenlinie ist knapp 8) */
+const GABEL_ABSTAND = 4
+
+/**
+ * Gabeln (Crescendo, Decrescendo) beginnen und enden mit kleinem Abstand neben p, f usw. und berühren einander nicht
+ * (Daniel, 17.11.2026: „nicht auf der Dynamikbezeichnung, sondern mit kleinem Abstand“). abcjs lässt sie an der Note
+ * beginnen und enden, an der auch das Zeichen steht, und zeichnet sie dadurch durch das Zeichen hindurch.
+ */
+function gabelnAbsetzen(svg: SVGSVGElement) {
+  const z = String.raw`\s*(-?[\d.]+)\s+(-?[\d.]+)\s*`
+  // Eine Gabel sind zwei gerade Linien mit gemeinsamem Anfang (Crescendo) oder Ende (Decrescendo)
+  const muster = new RegExp(`^M${z}L${z}M${z}L${z}$`)
+  type Gabel = { el: SVGPathElement; zeile: string; w: number[]; x1: number; x2: number; oben: number; unten: number }
+  const gabeln: Gabel[] = []
+  const zeichen: { zeile: string; links: number; rechts: number; oben: number; unten: number }[] = []
+  for (const p of svg.querySelectorAll<SVGPathElement>('path.abcjs-dynamics')) {
+    const zeile = zeileVon(p) ?? ''
+    const m = (p.getAttribute('d') ?? '').match(muster)
+    if (m) {
+      const w = m.slice(1).map(Number)
+      const ys = [w[1], w[3], w[5], w[7]]
+      gabeln.push({ el: p, zeile, w, x1: w[0], x2: w[2], oben: Math.min(...ys), unten: Math.max(...ys) })
+    } else {
+      const b = p.getBBox()
+      zeichen.push({ zeile, links: b.x, rechts: b.x + b.width, oben: b.y, unten: b.y + b.height })
+    }
+  }
+  for (const g of gabeln) {
+    const daneben = zeichen.filter((s) => s.zeile === g.zeile && s.unten > g.oben && s.oben < g.unten)
+    let x1 = g.x1
+    let x2 = g.x2
+    for (const s of daneben) {
+      if (g.x1 >= s.links - 2 && g.x1 <= s.rechts + GABEL_ABSTAND) x1 = Math.max(x1, s.rechts + GABEL_ABSTAND)
+      if (g.x2 >= s.links - GABEL_ABSTAND && g.x2 <= s.rechts + 2) x2 = Math.min(x2, s.links - GABEL_ABSTAND)
+    }
+    // Zwei Gabeln, die sich ohne Zeichen dazwischen treffen (< >), bekommen eine kleine Lücke
+    for (const h of gabeln) {
+      if (h === g || h.zeile !== g.zeile) continue
+      if (Math.abs(g.x2 - h.x1) < 1) x2 = Math.min(x2, g.x2 - GABEL_ABSTAND / 2)
+      if (Math.abs(g.x1 - h.x2) < 1) x1 = Math.max(x1, g.x1 + GABEL_ABSTAND / 2)
+    }
+    // Nie kürzer als eine kurze Gabel; im Zweifel die alte Lage
+    if (x2 - x1 < 8 || (x1 === g.x1 && x2 === g.x2)) continue
+    const [, y1, , y2, , y3, , y4] = g.w
+    const r = (v: number) => +v.toFixed(2)
+    g.el.setAttribute('d', `M ${r(x1)} ${y1} L ${r(x2)} ${y2} M ${r(x1)} ${y3} L ${r(x2)} ${y4}`)
+  }
+}
+
+/**
+ * Atemzeichen stehen über dem System nach der Note, kurz vor der nächsten Note oder dem Taktstrich, also dort, wo die Note endet.
+ * abcjs setzt sie über die Note selbst (mitten im Takt) oder auf den Taktstrich.
+ */
+function atemzeichenSetzen(svg: SVGSVGElement) {
+  for (const komma of svg.querySelectorAll<SVGGraphicsElement>('path[data-name=","]')) {
+    const gruppe = komma.parentElement
+    const zeile = gruppe ? zeileVon(gruppe) : undefined
+    const oberlinie = zeile ? svg.querySelector<SVGGraphicsElement>(`g.abcjs-staff.${zeile} .abcjs-top-line`) : null
+    if (!gruppe || !zeile || !oberlinie) continue
+    const kb = komma.getBBox()
+    const kasten = (e: SVGGraphicsElement) => e.getBBox()
+    const koepfe = [...svg.querySelectorAll<SVGGraphicsElement>(`g.abcjs-note.${zeile} .abcjs-notehead`)].map(kasten)
+    const striche = [...svg.querySelectorAll<SVGGraphicsElement>(`g.abcjs-bar.${zeile} path[data-name="bar"]`)].map(kasten)
+    let vorher: number
+    let danach: number
+    if (gruppe.matches('.abcjs-bar')) {
+      // am Taktstrich: nach der letzten Note davor, vor dem Strich
+      const strich = Math.min(...[...gruppe.querySelectorAll<SVGGraphicsElement>('path[data-name="bar"]')].map((e) => kasten(e).x))
+      danach = strich
+      vorher = Math.max(...koepfe.filter((b) => b.x + b.width <= strich).map((b) => b.x + b.width))
+    } else {
+      const kopf = gruppe.querySelector<SVGGraphicsElement>('.abcjs-notehead')
+      if (!kopf) continue
+      const kb2 = kasten(kopf)
+      vorher = kb2.x + kb2.width
+      danach = Math.min(...[...koepfe, ...striche].map((b) => b.x).filter((x) => x > vorher + 0.5))
+    }
+    if (!isFinite(vorher) || !isFinite(danach)) continue
+    // kurz vor dem nächsten Element (dort endet die Note); ist die Lücke zu klein, mittig darin
+    let mitte = danach - 8
+    if (mitte - kb.width / 2 < vorher + 3) mitte = (vorher + danach) / 2
+    // knapp über der obersten Linie, aber über allem, was an dieser Stelle höher liegt (Hilfslinien, Hälse, Bögen)
+    const links = mitte - kb.width / 2 - 2
+    const rechts = mitte + kb.width / 2 + 2
+    let hoch = oberlinie.getBBox().y - 5
+    for (const p of svg.querySelectorAll<SVGGraphicsElement>(`g.abcjs-note.${zeile} path, path.abcjs-slur.${zeile}`)) {
+      if (p.getAttribute('data-name') === ',') continue
+      const b = p.getBBox()
+      if (b.x < rechts && b.x + b.width > links) hoch = Math.min(hoch, b.y - 3)
+    }
+    const dx = mitte - (kb.x + kb.width / 2)
+    const dy = hoch - (kb.y + kb.height)
+    komma.setAttribute('transform', `translate(${dx.toFixed(2)} ${dy.toFixed(2)})`)
+  }
+}
+
+/** Rahmen eines Elements samt eigener Verschiebung (transform="translate(…)", etwa bei versetzten Atemzeichen) */
+function kasten(el: SVGGraphicsElement): DOMRect {
+  const b = el.getBBox()
+  const m = (el.getAttribute('transform') ?? '').match(/translate\(\s*(-?[\d.]+)[\s,]+(-?[\d.]+)\s*\)/)
+  return m ? new DOMRect(b.x + Number(m[1]), b.y + Number(m[2]), b.width, b.height) : b
+}
+
+/** Höhe der Dynamik (Mitte der Gabeln) über der obersten Notenlinie, so wie abcjs sie setzt, wenn nichts dazwischen steht */
+const DYNAMIK_HOEHE = 33
+
+/**
+ * abcjs setzt p, f und Gabeln über alle Beschriftungen einer Zeile, auch wenn an ihrer Stelle nichts darunter steht
+ * („Leise, aber deutlich“: das p schwebt über dem „t“ im nächsten Takt). Dann rückt die Dynamik der Zeile gemeinsam
+ * bis auf die übliche Höhe herunter, aber nie auf etwas, das an ihrer Stelle höher liegt.
+ */
+function dynamikSenken(svg: SVGSVGElement) {
+  for (const gruppe of svg.querySelectorAll<SVGGElement>('g.abcjs-staff-wrapper')) {
+    const dyn = [...gruppe.querySelectorAll<SVGPathElement>('path.abcjs-dynamics')]
+    const oberlinie = gruppe.querySelector<SVGGraphicsElement>('.abcjs-top-line')
+    if (!dyn.length || !oberlinie) continue
+    const kaesten = dyn.map((e) => e.getBBox())
+    const gabeln = kaesten.filter((_, i) => !/[cC]/.test(dyn[i].getAttribute('d') ?? ''))
+    // Bezug: Mitte der Gabeln; bei Zeichen allein liegt diese Mitte etwa 12 über ihrem Fuß
+    const bezug = gabeln.length ? gabeln[0].y + gabeln[0].height / 2 : Math.max(...kaesten.map((b) => b.y + b.height)) - 12
+    let schub = oberlinie.getBBox().y - DYNAMIK_HOEHE - bezug
+    if (schub < 2) continue
+    for (const el of gruppe.querySelectorAll<SVGGraphicsElement>('path, text')) {
+      if (dyn.includes(el as SVGPathElement) || el.closest('.abcjs-staff')) continue
+      const b = kasten(el)
+      for (const k of kaesten) {
+        const darunter = b.y >= k.y + k.height - 0.5
+        if (darunter && b.x < k.x + k.width + 3 && b.x + b.width > k.x - 3) schub = Math.min(schub, b.y - 4 - (k.y + k.height))
+      }
+    }
+    if (schub < 2) continue
+    dyn.forEach((e) => e.setAttribute('transform', `translate(0 ${schub.toFixed(2)})`))
+  }
+}
+
+/** Mindestabstand zwischen zwei Notenzeilen: vom Untersten der einen (Silben) bis zum Obersten der nächsten (SVG-Einheiten) */
+const ZEILEN_ABSTAND = 12
+
+/**
+ * abcjs stapelt die Silben einer Zeile und eine Beschriftung über der nächsten („dunkel“) fast ohne Abstand;
+ * dann rücken die folgenden Zeilen etwas tiefer.
+ */
+function zeilenAbstand(svg: SVGSVGElement) {
+  const zeilen = [...svg.querySelectorAll<SVGGElement>('g.abcjs-staff-wrapper')]
+  const kaesten = zeilen.map((z) => z.getBBox())
+  let schub = 0
+  for (let i = 1; i < zeilen.length; i++) {
+    const luecke = kaesten[i].y - (kaesten[i - 1].y + kaesten[i - 1].height)
+    if (luecke < ZEILEN_ABSTAND) schub += ZEILEN_ABSTAND - luecke
+    if (schub > 0) zeilen[i].setAttribute('transform', `translate(0 ${schub.toFixed(2)})`)
   }
 }
 
@@ -166,6 +322,12 @@ export function notenZeichnen(
       tune = malen((fehlt * 3) / 4)
       svg = ziel.querySelector('svg')
       if (svg) silbenMittig(svg)
+    }
+    if (svg) {
+      gabelnAbsetzen(svg)
+      atemzeichenSetzen(svg)
+      dynamikSenken(svg)
+      zeilenAbstand(svg)
     }
     zuschneiden(svg)
   }

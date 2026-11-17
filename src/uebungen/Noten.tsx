@@ -64,7 +64,7 @@ export function zuschneiden(svg: SVGSVGElement | null) {
 /**
  * Zeichnet die Noten in `ziel` mit einer Notenzeile von `breite` Einheiten.
  * abcjs bricht zu lange Zeilen um; danach werden die Takte gleichmäßig auf die Zeilen verteilt,
- * damit keine fast leere letzte Zeile entsteht.
+ * damit keine fast leere letzte Zeile entsteht. Ein Auftakt zählt dabei mit dem ersten Takt zusammen.
  */
 /** Wie abcjs zu lange Zeilen umbricht (Abstände als Vielfache des natürlichen Abstands) */
 export const UMBRUCH = { minSpacing: 1.4, maxSpacing: 2.4, preferredMeasuresPerLine: 8 }
@@ -76,10 +76,13 @@ export function zeichnen(abcjs: Abcjs, ziel: HTMLElement, abc: string, breite: n
   const zeilen = (tune.lines ?? []).filter((l) => l.staff)
   let takte = 0
   for (const z of zeilen) for (const x of z.staff?.[0]?.voices?.[0] ?? []) if ((x as { el_type?: string }).el_type === 'bar') takte++
-  if (zeilen.length > 1 && takte > zeilen.length) {
-    const proZeile = Math.ceil(takte / zeilen.length)
+  // Ein Auftakt zählt mit dem ersten vollen Takt zusammen, damit er nicht allein steht und keine fast leere letzte Zeile entsteht
+  const auftakt = !/^M:\s*none/m.test(abc) && tune.getPickupLength() > 0 ? 1 : 0
+  const stuecke = takte - auftakt
+  if (zeilen.length > 1 && stuecke > zeilen.length) {
+    const proZeile = Math.ceil(stuecke / zeilen.length)
     const umbrueche: number[] = []
-    for (let i = proZeile - 1; i < takte - 1; i += proZeile) umbrueche.push(i)
+    for (let i = proZeile - 1; i < stuecke - 1; i += proZeile) umbrueche.push(i + auftakt)
     // abcjs erwartet je Notenabschnitt eine Liste der letzten Takte einer Zeile; die Typen sagen fälschlich number[]
     tune = abcjs.renderAbc(ziel, abc, { ...grund, lineBreaks: [umbrueche] as unknown as number[] })[0]
   }

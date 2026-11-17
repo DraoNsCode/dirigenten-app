@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { Fragment, useState, type ReactNode } from 'react'
 import { Kopf, Zurueck } from '../bausteine'
 import { useNav } from '../navigation'
 import { Runter } from '../symbole'
@@ -22,8 +22,16 @@ function folienzeile(f: Folie, mitNoten: boolean): string {
   return [f.titel, text, mitNoten ? 'Noten' : undefined].filter(Boolean).join(' · ')
 }
 
-/** Anführungszeichen in der Ansage werden halbe (‚no‘), weil die Ansage selbst in „…“ steht */
-const innenHalb = (s: string) => s.replace(/„/g, '‚').replace(/“/g, '‘')
+/** Anführungszeichen in der Ansage werden halbe (‚no‘), weil die Ansage selbst in „…“ steht. Barlow gibt dem
+ *  unteren halben Zeichen (‚) eine Breite von 0,6 em; die Klasse rückt das Wort danach heran. */
+function innenHalb(s: string): ReactNode {
+  return s.split('„').map((teil, i) => (
+    <Fragment key={i}>
+      {i > 0 && <span className="halb-unten">‚</span>}
+      {teil.replace(/“/g, '‘')}
+    </Fragment>
+  ))
+}
 
 /** Ansage, „Gelingt, wenn“ und typischer Fehler – jeweils nur, wenn angegeben */
 function Durchfuehrung({ a }: { a: Angaben }) {
