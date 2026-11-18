@@ -50,3 +50,14 @@ export function folienFolge(folien: (Folie | undefined)[]): Folie[] {
 
 /** Für jede Folie: ist sie dieselbe wie die davor? */
 export const gleicheFolieWieDavor = (folien: (Folie | undefined)[]): boolean[] => folien.map((f, i) => gleich(f, folien[i - 1]))
+
+/** Was von einer Familie ausgewählt ist, in der Reihenfolge der Familie: „Grundübung · Stufe 2: In einem Schlag“ */
+export function gewaehltText(f: Familie, einheiten: string[]): string {
+  return ['grund', ...f.stufen.map((s) => s.id)]
+    .filter((e) => einheiten.includes(e))
+    .map((e) => {
+      const x = einheitVon(f, e)
+      return !x ? e : x.nr === 0 ? 'Grundübung' : `Stufe ${x.nr}: ${x.a.name}`
+    })
+    .join(' · ')
+}

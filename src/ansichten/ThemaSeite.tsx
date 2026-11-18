@@ -3,7 +3,9 @@ import { useNav } from '../navigation'
 import { Rechts } from '../symbole'
 import { Abschnitt } from '../uebungen/Teile'
 import { useInhalt } from '../themen/daten'
-import { Absaetze, Klappe, ThemenLeiste } from '../themen/Teile'
+import { Absaetze, Klappe, ThemenLeiste, ThemenWahlKnopf } from '../themen/Teile'
+import { useThemenAuswahl } from '../themen/auswahl'
+import { gewaehltText } from '../themen/folie'
 import type { Familie } from '../themen/typen'
 
 // Themenseite: immer sichtbar sind der Kern, „Im Chor erkennen“ und die Familien;
@@ -54,14 +56,7 @@ export default function ThemaSeite({ id }: { id: string }) {
         <Abschnitt titel="Familien">
           <ul className="list">
             {familien.map((f) => (
-              <li key={f.id}>
-                <button className="listbtn" type="button" onClick={() => oeffne(f.id)}>
-                  <span className="main">
-                    <span className="title">{f.name}</span>
-                    <span className="meta ein-ziel">{f.grund.ziel}</span>
-                  </span>
-                </button>
-              </li>
+              <FamilienZeile key={f.id} f={f} oeffne={oeffne} />
             ))}
           </ul>
         </Abschnitt>
@@ -85,5 +80,22 @@ export default function ThemaSeite({ id }: { id: string }) {
         ))}
       <ThemenLeiste />
     </>
+  )
+}
+
+/** Familie in der Liste der Themenseite: ein Tipp öffnet sie, „+“ wählt die Grundübung aus (Daniel, 18.11.2026) */
+function FamilienZeile({ f, oeffne }: { f: Familie; oeffne: (id: string) => void }) {
+  const auswahl = useThemenAuswahl()
+  const gewaehlt = auswahl.vonFamilie(f.id)
+  return (
+    <li className="ein-zeile">
+      <button className="listbtn" type="button" onClick={() => oeffne(f.id)}>
+        <span className="main">
+          <span className="title">{f.name}</span>
+          <span className={'meta ein-ziel' + (gewaehlt.length ? ' pr-gewaehlt' : '')}>{gewaehlt.length ? gewaehltText(f, gewaehlt) : f.grund.ziel}</span>
+        </span>
+      </button>
+      <ThemenWahlKnopf wahl={{ familie: f.id, einheit: 'grund' }} name={`${f.name}, Grundübung`} />
+    </li>
   )
 }

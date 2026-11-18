@@ -10,9 +10,8 @@ import type { Angaben, Folie, Stufe } from '../themen/typen'
 
 // Familienseite: die Grundübung in der Lesereihenfolge des Dirigenten – Noten, Ziel, Ansage,
 // „Gelingt, wenn“, typischer Fehler –, darunter die Stufen. Eine Stufe zeigt, was sich ändert; hat sie eigene
-// Noten, Texte oder eine eigene Folie, lässt sie sich aufklappen. Nur im Reiter „Folien“ geöffnet, lassen sich die
-// Grundübung (Knopf neben dem Titel) und jede Stufe für die Probenfolien auswählen; im Reiter „Übungen“ wird nur
-// gelesen (Daniel, 18.11.2026).
+// Noten, Texte oder eine eigene Folie, lässt sie sich aufklappen. Die Grundübung (Knopf neben dem Titel) und jede Stufe
+// lassen sich in beiden Reitern für die Probenfolien auswählen (Daniel, 18.11.2026: „einfach überall das Plus“).
 // Aus der Auswahl geöffnet (stufe), steht die gewählte Stufe offen und markiert da, und die Seite rückt zu ihr
 // (Daniel, 18.11.2026).
 
@@ -81,14 +80,12 @@ function StufenZeile({
   familie,
   mitMetronom,
   markiert,
-  mitWahl,
 }: {
   nr: number
   s: Stufe
   familie: string
   mitMetronom: boolean
   markiert: boolean
-  mitWahl: boolean
 }) {
   const eigenes = !!(s.noten || s.folie || s.ziel || s.ansage || s.gelingt?.length || s.fehler)
   const [offen, setOffen] = useState(markiert && eigenes)
@@ -125,7 +122,7 @@ function StufenZeile({
         ) : (
           <div className="th-stufenkopf">{kopf}</div>
         )}
-        {mitWahl && <ThemenWahlKnopf wahl={{ familie, einheit: s.id }} name={`Stufe ${nr}, ${s.name}`} />}
+        <ThemenWahlKnopf wahl={{ familie, einheit: s.id }} name={`Stufe ${nr}, ${s.name}`} />
       </div>
       {offen && (
         <div className="th-stufeninhalt">
@@ -157,7 +154,6 @@ export default function FamilieSeite({ id, stufe }: { id: string; stufe?: string
 
   const g = f.grund
   const mitMetronom = METRONOM_PHASEN.includes(f.phase)
-  const mitWahl = nav.aktiv === 'folien'
   return (
     <>
       <Zurueck text={zurueck} />
@@ -165,7 +161,7 @@ export default function FamilieSeite({ id, stufe }: { id: string; stufe?: string
         eyebrow={f.phase}
         titel={f.name}
         klein
-        rechts={mitWahl ? <ThemenWahlKnopf wahl={{ familie: f.id, einheit: 'grund' }} name={`${f.name}, Grundübung`} /> : undefined}
+        rechts={<ThemenWahlKnopf wahl={{ familie: f.id, einheit: 'grund' }} name={`${f.name}, Grundübung`} />}
       />
 
       <section className="ein-teil">
@@ -180,7 +176,7 @@ export default function FamilieSeite({ id, stufe }: { id: string; stufe?: string
         <Abschnitt titel="Stufen">
           <ol className="th-stufen">
             {f.stufen.map((s, i) => (
-              <StufenZeile key={s.id} nr={i + 1} s={s} familie={f.id} mitMetronom={mitMetronom} markiert={s.id === stufe} mitWahl={mitWahl} />
+              <StufenZeile key={s.id} nr={i + 1} s={s} familie={f.id} mitMetronom={mitMetronom} markiert={s.id === stufe} />
             ))}
           </ol>
         </Abschnitt>

@@ -4,7 +4,7 @@ import { probeZeile } from '../einsingen/folie'
 import { useNav } from '../navigation'
 import { useInhalt } from '../themen/daten'
 import { useThemenAuswahl } from '../themen/auswahl'
-import { einheitVon } from '../themen/folie'
+import { gewaehltText } from '../themen/folie'
 import { Ladezustand, ThemenLeiste } from '../themen/Teile'
 import { Rechts } from '../symbole'
 import type { Familie } from '../themen/typen'
@@ -13,11 +13,13 @@ import type { Familie } from '../themen/typen'
 // Gelesen wird im Reiter „Übungen“. Später kommen die Lieder als zweiter Block dazu.
 // Aufbau (Claudes Vorschlag, noch nicht beurteilt):
 // - Block „Übungen“, nach Themen gegliedert (wie im Reiter „Übungen“; Thema und Phase entsprechen sich). Die Themen
-//   sind eingeklappt und lassen sich aufklappen (Daniel, 18.11.2026); im Kopf steht, wie viel daraus ausgewählt ist.
+//   sind eingeklappt und lassen sich aufklappen (Daniel, 18.11.2026); im Kopf steht nur, wie viel daraus ausgewählt
+//   ist (Daniel: keine Zahl der Übungen).
 //   Aufgeklappt bleibt, solange die App offen ist.
 // - Je Familie eine Zeile: links der Name, rechts kleine Schalter für die Grundübung (G) und die Stufen (1, 2, …).
 //   Unter dem Namen steht, was ausgewählt ist.
-// - Ein Tipp auf den Namen öffnet die Familienseite (dort lässt sich ebenfalls auswählen).
+// - Ein Tipp auf den Namen öffnet die Familienseite: am PC rechts, auf Handy und Tablet im Reiter „Übungen“
+//   (Daniel, 18.11.2026); zurück in „Folien“ über den Reiter.
 // - Schmal: Leiste unten „Auswahl (n): Folien erstellen“. Breit: rechts steht immer die Auswahl mit dem Export.
 
 export default function FolienListe() {
@@ -86,7 +88,7 @@ function ThemaGruppe({
       <button type="button" className="fo-themakopf" aria-expanded={offen} aria-controls={listeId} onClick={() => umschalten(id)}>
         <Rechts size={16} />
         <span className="fo-themaname">{name}</span>
-        {n > 0 ? <span className="fo-zahl">{n} ausgewählt</span> : <span className="fo-familienzahl">{familien.length} Übungen</span>}
+        {n > 0 && <span className="fo-zahl">{n} ausgewählt</span>}
       </button>
       {offen && (
         <ul className="list" id={listeId}>
@@ -99,16 +101,6 @@ function ThemaGruppe({
   )
 }
 
-/** Was von einer Familie ausgewählt ist, in der Reihenfolge der Familie: „Grundübung · Stufe 2: In einem Schlag“ */
-function gewaehltText(f: Familie, einheiten: string[]): string {
-  return ['grund', ...f.stufen.map((s) => s.id)]
-    .filter((e) => einheiten.includes(e))
-    .map((e) => {
-      const x = einheitVon(f, e)
-      return !x ? e : x.nr === 0 ? 'Grundübung' : `Stufe ${x.nr}: ${x.a.name}`
-    })
-    .join(' · ')
-}
 
 function FamilienZeile({ f }: { f: Familie }) {
   const nav = useNav()
@@ -120,7 +112,12 @@ function FamilienZeile({ f }: { f: Familie }) {
 
   return (
     <li className="fo-familie">
-      <button className="listbtn fo-name" type="button" aria-current={offen ? 'true' : undefined} onClick={() => nav.geh({ v: 'familie', id: f.id })}>
+      <button
+        className="listbtn fo-name"
+        type="button"
+        aria-current={offen ? 'true' : undefined}
+        onClick={() => (nav.layout === 'breit' ? nav.geh({ v: 'familie', id: f.id }) : nav.inUebungen({ v: 'familie', id: f.id }))}
+      >
         <span className="main">
           <span className="title">{f.name}</span>
           {unter && <span className={'meta ein-ziel' + (gewaehlt.length ? ' pr-gewaehlt' : '')}>{unter}</span>}

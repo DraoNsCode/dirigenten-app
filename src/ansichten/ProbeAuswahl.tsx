@@ -74,7 +74,11 @@ export default function ProbeAuswahl({ fest }: { fest?: boolean }) {
                 >
                   <span className="num">{i + 1}</span>
                   <div className="main">
-                    <button type="button" className="auswahl-titel" disabled={!p.folie} onClick={() => nav.geh({ v: 'familie', id: p.w.familie, stufe: p.w.einheit })}>
+                    <button type="button" className="auswahl-titel" disabled={!p.folie} onClick={() => {
+                          const a = { v: 'familie' as const, id: p.w.familie, stufe: p.w.einheit }
+                          if (nav.layout === 'breit') nav.geh(a)
+                          else nav.inUebungen(a)
+                        }}>
                       {p.f && p.folie ? p.f.name : `${p.s} (nicht mehr vorhanden)`}
                     </button>
                     {p.f && p.folie && (

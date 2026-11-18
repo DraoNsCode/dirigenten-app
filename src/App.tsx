@@ -319,6 +319,13 @@ function Hauptansicht({ email }: { email: string }) {
       zurueck,
       reiter: wechsleReiter,
       aktiv: reiter,
+      inUebungen: (a) => {
+        // Den offenen Reiter merken; im Reiter „Übungen“ liegt die Seite dann über der Liste (Zurück führt zur Liste,
+        // die dort steht, wo man sie verlassen hat). Daniel, 18.11.2026: am Handy aus „Folien“ in „Übungen“ lesen.
+        merkeReiter()
+        const g = gemerkt.current.uebungen
+        neuBeginnen('uebungen', [START.uebungen, a], [g?.scroll[0] ?? 0])
+      },
       zurWoche: (datum) => {
         setWoche(wochenAbstand(datum, heute()))
         if (aktuell.current.reiter !== 'woche') merkeReiter()

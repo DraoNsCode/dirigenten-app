@@ -662,3 +662,14 @@ button.th-stufenkopf { cursor: pointer; }
 .fo-thema ul.list { border-top: 0; padding: 0 14px; }
 .fo-thema ul.list li:last-child { border-bottom: 0; }
 @media (hover: hover) and (pointer: fine) { .fo-themakopf:hover { background: var(--surface2); } }
+
+/* Auswählen auch im Reiter „Übungen“ (Daniel, 18.11.2026) */
+.ue-mitwahl { display: flex; align-items: center; padding-right: 12px; }
+.ue-mitwahl .ue-zeile { flex: 1; min-width: 0; padding-right: 8px; }
+.tab { position: relative; }
+.tab-zahl {
+  position: absolute; top: 5px; left: calc(50% + 7px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;
+  background: var(--gold); color: #14244a; font-family: var(--font-body); font-weight: 700; font-size: 11px; line-height: 18px;
+  text-align: center; letter-spacing: 0;
+}
+.tabs.seite .tab-zahl { top: 8px; }

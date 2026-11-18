@@ -1,4 +1,5 @@
 import { Folien, Kalender, MenueSymbol, Noten, Stimmgabel } from './symbole'
+import { useThemenAuswahl } from './themen/auswahl'
 
 // 'sammlung' ist die bisherige Übungssammlung: kein eigener Reiter in der Leiste, erreichbar über das Menü (übergangsweise)
 export type Reiter = 'woche' | 'lieder' | 'uebungen' | 'folien' | 'menue' | 'sammlung'
@@ -23,6 +24,8 @@ export default function Leiste({
   onWechsel: (r: Reiter) => void
   seitlich?: boolean
 }) {
+  // Am Reiter „Folien“: wie viele Übungen ausgewählt sind – auch beim Auswählen im Reiter „Übungen“ sichtbar
+  const n = useThemenAuswahl().schluessel.length
   return (
     <nav className={seitlich ? 'tabs seite' : 'tabs'} aria-label="Hauptnavigation">
       {REITER.map(({ id, text, Symbol }) => (
@@ -35,6 +38,11 @@ export default function Leiste({
         >
           <Symbol />
           <span>{text}</span>
+          {id === 'folien' && n > 0 && (
+            <span className="tab-zahl" aria-label={`${n} ausgewählt`}>
+              {n}
+            </span>
+          )}
         </button>
       ))}
     </nav>

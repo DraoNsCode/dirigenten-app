@@ -68,6 +68,8 @@ export type Navigation = {
   reiter: (r: Reiter) => void
   /** Der Reiter, der gerade offen ist */
   aktiv: Reiter
+  /** In den Reiter „Übungen“ wechseln und dort diese Seite über der Liste öffnen (Handy und Tablet, aus „Folien“) */
+  inUebungen: (a: Ansicht) => void
   /** Woche mit diesem Datum unter „Wochenplan“ öffnen */
   zurWoche: (datum: Date) => void
   /** Wochen-Abstand zur aktuellen Woche (0 = diese Woche) */
