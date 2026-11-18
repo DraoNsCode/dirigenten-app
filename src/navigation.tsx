@@ -16,11 +16,13 @@ export type Ansicht =
   | { v: 'uebung'; id: string }
   | { v: 'erklaerung'; id: string }
   | { v: 'auswahl' }
-  // Reiter „Übungen“: Liste zum Auswählen, Themen- und Familienseite zum Lesen, Auswahl für die Probenfolien
+  // Reiter „Übungen“: Liste, Themen- und Familienseite zum Lesen
   | { v: 'vorbereiten' }
   | { v: 'thema'; id: string }
   /** stufe: aus der Auswahl geöffnet – diese Stufe steht offen und markiert da */
   | { v: 'familie'; id: string; stufe?: string }
+  // Reiter „Folien“: Übungen auswählen, Auswahl ordnen und als Probenfolien exportieren
+  | { v: 'folien' }
   | { v: 'probe-auswahl' }
 
 /** Einstellungen im Reiter Lieder; bleiben erhalten, solange die App offen ist */
@@ -64,6 +66,8 @@ export type Navigation = {
   ersetze: (a: Ansicht) => void
   zurueck: () => void
   reiter: (r: Reiter) => void
+  /** Der Reiter, der gerade offen ist */
+  aktiv: Reiter
   /** Woche mit diesem Datum unter „Wochenplan“ öffnen */
   zurWoche: (datum: Date) => void
   /** Wochen-Abstand zur aktuellen Woche (0 = diese Woche) */

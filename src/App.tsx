@@ -38,12 +38,14 @@ import FamilieSeite from './ansichten/FamilieSeite'
 import { InhaltProvider } from './themen/daten'
 import { ThemenAuswahlProvider } from './themen/auswahl'
 import ProbeAuswahl from './ansichten/ProbeAuswahl'
+import FolienListe from './ansichten/Folien'
 import { IST_IOS, useZurueckWischen, VERSATZ } from './wischen'
 
 const START: Record<Reiter, Ansicht> = {
   woche: { v: 'woche' },
   lieder: { v: 'lieder' },
   uebungen: { v: 'vorbereiten' },
+  folien: { v: 'folien' },
   menue: { v: 'menue' },
   sammlung: { v: 'uebungen' },
 }
@@ -273,6 +275,7 @@ function Hauptansicht({ email }: { email: string }) {
       },
       zurueck,
       reiter: wechsleReiter,
+      aktiv: reiter,
       zurWoche: (datum) => {
         setWoche(wochenAbstand(datum, heute()))
         neuBeginnen('woche', [START.woche])
@@ -287,7 +290,7 @@ function Hauptansicht({ email }: { email: string }) {
       layout,
       detail,
     }),
-    [woche, wechsleReiter, stapel, lieder, uebungen, layout, breit, detail, vorwaerts, ersetzeOben, zurueck, neuBeginnen],
+    [woche, wechsleReiter, reiter, stapel, lieder, uebungen, layout, breit, detail, vorwaerts, ersetzeOben, zurueck, neuBeginnen],
   )
 
   // Die Unterlage beim Zurück-Wischen zeigt die vorherige Ansicht genau so, wie sie nach dem Zurückgehen aussieht
@@ -328,6 +331,8 @@ function Hauptansicht({ email }: { email: string }) {
         return <ThemaSeite key={a.id} id={a.id} />
       case 'familie':
         return <FamilieSeite key={`${a.id}:${a.stufe ?? ''}`} id={a.id} stufe={a.stufe} />
+      case 'folien':
+        return <FolienListe />
       case 'probe-auswahl':
         return <ProbeAuswahl />
     }
@@ -348,7 +353,10 @@ function Hauptansicht({ email }: { email: string }) {
             </BereichKontext.Provider>
             <BereichKontext.Provider value="detail">
               <section className="view detail-bereich" key={detail ? schluessel(detail) : 'leer'} aria-label="Details">
-                <div className="inhalt">{detail ? zeige(detail) : <LeererBereich reiter={reiter} />}</div>
+                {/* Reiter „Folien“: rechts steht ohne andere Ansicht immer die Auswahl mit dem Export */}
+                <div className="inhalt">
+                  {detail ? zeige(detail) : reiter === 'folien' ? <ProbeAuswahl fest /> : <LeererBereich reiter={reiter} />}
+                </div>
               </section>
             </BereichKontext.Provider>
           </>
@@ -385,7 +393,8 @@ function LeererBereich({ reiter }: { reiter: Reiter }) {
   const text: Record<Reiter, string> = {
     woche: 'Bei einem Termin „Lied eintragen“ oder „Lied vormerken“ wählen oder ein Lied antippen – es erscheint hier.',
     lieder: 'Ein Lied auswählen, um Angaben, Noten und Hinweise zu sehen.',
-    uebungen: 'Eine Familie antippen: Links klappen ihre Stufen auf, hier steht ihre Seite. Mit + auswählen.',
+    uebungen: 'Ein Thema oder eine Familie antippen, um es hier zu lesen.',
+    folien: '',
     sammlung: 'Eine Übung oder Erklärung auswählen, um sie hier zu lesen.',
     menue: 'Gottesdienste, Proben oder „Lied hinzufügen“ wählen.',
   }

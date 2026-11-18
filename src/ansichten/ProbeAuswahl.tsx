@@ -6,17 +6,19 @@ import Export from '../einsingen/Export'
 import { useInhalt } from '../themen/daten'
 import { useThemenAuswahl } from '../themen/auswahl'
 import { einheitName, folienFolge, folieVon, gleicheFolieWieDavor, wahlAus } from '../themen/folie'
+import { probeZeile } from '../einsingen/folie'
 import { zurueckText } from '../themen/Teile'
 import { useZiehen, vorschau, type Geist as GeistDaten, type Zug } from './ziehen'
 
-// Auswahl für die Probenfolien: oben der Export als PDF, darunter die Reihenfolge der Folien.
+// Auswahl für die Probenfolien (Reiter „Folien“): oben der Export als PDF, darunter die Reihenfolge der Folien.
+// Breit steht sie rechts, solange keine andere Ansicht offen ist (fest: ohne Zurück/Schließen).
 // Jeder Punkt ist eine Grundübung oder Stufe einer Familie. Die Reihenfolge ändert man per Ziehen
 // wie im Wochenplan (Finger: lange drücken; Maus: ziehen) – Daniel, 16.11.2026.
 
 const LISTE = 'auswahl'
 const fingerGeraet = () => typeof window !== 'undefined' && window.matchMedia('(pointer: coarse)').matches
 
-export default function ProbeAuswahl() {
+export default function ProbeAuswahl({ fest }: { fest?: boolean }) {
   const nav = useNav()
   const { stand } = useInhalt()
   const auswahl = useThemenAuswahl()
@@ -41,12 +43,16 @@ export default function ProbeAuswahl() {
 
   return (
     <>
-      <Zurueck text={zurueckText(nav.vorher)} />
-      <Kopf eyebrow="Probenfolien" titel="Auswahl" klein />
+      {!fest && <Zurueck text={zurueckText(nav.vorher)} />}
+      <Kopf eyebrow={probeZeile()} titel="Auswahl" klein />
 
       {!d && <p className="note">{stand.art === 'fehler' ? 'Die Themen konnten nicht geladen werden.' : 'Lädt …'}</p>}
 
-      {d && n === 0 && <p className="note">Noch nichts ausgewählt. Im Reiter „Übungen“ rechts neben einer Übung auf + tippen.</p>}
+      {d && n === 0 && (
+        <p className="note">
+          Noch nichts ausgewählt. {fest ? 'Links' : 'In der Liste'} bei einer Übung die Grundübung (G) oder eine Stufe antippen.
+        </p>
+      )}
 
       {d && n > 0 && (
         <>

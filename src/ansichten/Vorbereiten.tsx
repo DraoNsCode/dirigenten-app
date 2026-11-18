@@ -1,26 +1,14 @@
-import { useState } from 'react'
 import { Kopf } from '../bausteine'
-import { useMeldung } from '../meldung'
 import { useNav } from '../navigation'
-import { Haken, Plus, Rechts, Runter } from '../symbole'
+import { Rechts } from '../symbole'
 import { useInhalt } from '../themen/daten'
-import { useThemenAuswahl } from '../themen/auswahl'
-import { einheitName } from '../themen/folie'
-import { Ladezustand, ThemenLeiste, ThemenWahlKnopf } from '../themen/Teile'
+import { Ladezustand } from '../themen/Teile'
 import type { Familie, Thema } from '../themen/typen'
 
-// Reiter „Übungen“ (Daniel, 18.11.2026: ein Reiter statt „Übungen“ und „Einsingen“):
-// ausgewählt wird in der Liste, gelesen auf der Themen- und Familienseite.
-// - Je Thema eine Überschrift; „Thema ›“ öffnet die Themenseite. Darunter die Familien mit + für die Grundübung und
-//   aufklappbaren Stufen, die sich einzeln auswählen lassen.
-// - Breit (PC): Ein Klick auf eine Familie klappt links ihre Stufen auf und zeigt rechts ihre Seite; ist die Seite
-//   schon offen, klappt der Klick nur auf oder zu.
-// - Schmal (Handy): Ein Tipp klappt die Familie auf, „Lesen“ öffnet ihre Seite. Aufgeklappte Familien bleiben offen,
-//   wenn man von der Seite zurückkommt.
+// Reiter „Übungen“: zum Lesen und Vorbereiten (Daniel, 18.11.2026: Ausgewählt und exportiert wird im Reiter „Folien“).
+// - Je Thema eine Überschrift; „Thema ›“ öffnet die Themenseite. Darunter die Familien; ein Tipp öffnet ihre Seite
+//   (breit: rechts).
 // - Am Ende die Themen ohne Familien als Lesetexte („Zum Lesen“).
-
-/** Aufgeklappte Familien; bleiben erhalten, solange die App offen ist (auch wenn die Liste neu gezeichnet wird) */
-const aufgeklappt = new Set<string>()
 
 export default function Vorbereiten() {
   const nav = useNav()
@@ -84,7 +72,6 @@ export default function Vorbereiten() {
           </ul>
         </section>
       )}
-      <ThemenLeiste />
     </div>
   )
 }
@@ -103,90 +90,25 @@ function ThemaKopf({ t, aktiv }: { t: Thema; aktiv: boolean }) {
   )
 }
 
-/** Eine Familie: Name und was gewählt ist, + für die Grundübung, aufgeklappt die Grundübung und die Stufen */
+/** Unter dem Namen: die Grundübung (wenn sie anders heißt) und die Zahl der Stufen; ohne beides das Ziel */
+export function familienZusatz(f: Familie): string {
+  const stufen = !f.stufen.length ? '' : f.stufen.length === 1 ? '1 Stufe' : `${f.stufen.length} Stufen`
+  const teile = [f.grund.name !== f.name ? f.grund.name : '', stufen].filter(Boolean)
+  return teile.length ? teile.join(' · ') : f.grund.ziel
+}
+
+/** Eine Familie; ein Tipp öffnet ihre Seite */
 function FamilienZeile({ f, aktiv }: { f: Familie; aktiv: boolean }) {
   const nav = useNav()
-  const auswahl = useThemenAuswahl()
-  const zeige = useMeldung()
-  const breit = nav.layout === 'breit'
-  const [auf, setAuf] = useState(() => aufgeklappt.has(f.id))
-  const gewaehlt = auswahl.vonFamilie(f.id)
-  const n = gewaehlt.length
-
-  // Unter dem Namen: was ausgewählt ist, sonst die Grundübung und wie viele Stufen es gibt
-  const stufen = f.stufen.length === 1 ? '1 Stufe' : `${f.stufen.length} Stufen`
-  const zusatz =
-    n > 1
-      ? `${n} ausgewählt`
-      : n === 1
-        ? einheitName(f, gewaehlt[0])
-        : [f.grund.name !== f.name ? f.grund.name : 'Grundübung', f.stufen.length ? stufen : ''].filter(Boolean).join(' · ')
-
-  function setze(neu: boolean) {
-    if (neu) aufgeklappt.add(f.id)
-    else aufgeklappt.delete(f.id)
-    setAuf(neu)
-  }
-
-  function tippen() {
-    if (breit && !aktiv) {
-      setze(true)
-      nav.geh({ v: 'familie', id: f.id })
-    } else setze(!auf)
-  }
-
-  // Der Knopf an der Zeile wählt die Grundübung; ist schon etwas gewählt, nimmt er alles dieser Familie heraus
-  function knopf() {
-    if (n) {
-      auswahl.familieEntfernen(f.id)
-      zeige('Aus der Auswahl genommen')
-    } else {
-      auswahl.umschalten({ familie: f.id, einheit: 'grund' })
-      zeige(`Zur Auswahl hinzugefügt (${auswahl.schluessel.length + 1})`)
-    }
-  }
-
   return (
-    <li className="pr-familie">
-      <div className="ein-zeile">
-        <button className="listbtn" type="button" aria-expanded={auf} aria-current={aktiv ? 'true' : undefined} onClick={tippen}>
-          <span className="main">
-            <span className="title">{f.name}</span>
-            <span className={'meta ein-ziel' + (n ? ' pr-gewaehlt' : '')}>{zusatz}</span>
-          </span>
-          <Runter size={16} />
-        </button>
-        <button
-          type="button"
-          className={'ein-wahl' + (n ? ' drin' : '')}
-          aria-pressed={n > 0}
-          aria-label={n ? `${f.name} aus der Auswahl nehmen` : `${f.name}, Grundübung zur Auswahl`}
-          onClick={knopf}
-        >
-          {n ? <Haken size={18} /> : <Plus size={18} />}
-        </button>
-      </div>
-      {auf && (
-        <ul className="pr-stufen">
-          {[{ id: 'grund', name: f.grund.name }, ...f.stufen].map((e, i) => (
-            <li key={e.id}>
-              <span className="pr-stufenname">
-                <span className="pr-stufennr">{i === 0 ? 'Grundübung' : `Stufe ${i}`}</span>
-                {e.name}
-              </span>
-              <ThemenWahlKnopf wahl={{ familie: f.id, einheit: e.id }} name={i === 0 ? `${f.name}, Grundübung` : `Stufe ${i}, ${e.name}`} />
-            </li>
-          ))}
-          {!breit && (
-            <li>
-              <button className="th-verweis" type="button" onClick={() => nav.geh({ v: 'familie', id: f.id })}>
-                <Rechts size={16} />
-                Lesen
-              </button>
-            </li>
-          )}
-        </ul>
-      )}
+    <li>
+      <button className="listbtn" type="button" aria-current={aktiv ? 'true' : undefined} onClick={() => nav.geh({ v: 'familie', id: f.id })}>
+        <span className="main">
+          <span className="title">{f.name}</span>
+          <span className="meta ein-ziel">{familienZusatz(f)}</span>
+        </span>
+        <Rechts size={16} />
+      </button>
     </li>
   )
 }

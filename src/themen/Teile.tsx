@@ -1,6 +1,6 @@
 import { useState, type ReactNode } from 'react'
 import { useMeldung } from '../meldung'
-import { useBereich, useNav, type Ansicht } from '../navigation'
+import { useNav, type Ansicht } from '../navigation'
 import { Folien, Haken, Plus, Rechts, Runter } from '../symbole'
 import { Fehlerkarte } from '../bausteine'
 import { useThemenAuswahl } from './auswahl'
@@ -30,6 +30,8 @@ export function zurueckText(vorher: Ansicht | undefined, themaName?: (id: string
   switch (vorher?.v) {
     case 'vorbereiten':
       return 'Übungen'
+    case 'folien':
+      return 'Folien'
     case 'probe-auswahl':
       return 'Auswahl'
     case 'thema':
@@ -88,13 +90,12 @@ export function ThemenWahlKnopf({ wahl, name }: { wahl: Wahl; name: string }) {
   )
 }
 
-/** Leiste unten, solange etwas ausgewählt ist; im breiten Modus nur links in der Liste */
+/** Leiste unten im Reiter „Folien“, solange etwas ausgewählt ist. Breit nicht: Dort steht die Auswahl rechts. */
 export function ThemenLeiste() {
   const auswahl = useThemenAuswahl()
   const nav = useNav()
-  const bereich = useBereich()
   const n = auswahl.schluessel.length
-  if (!n || bereich === 'detail') return null
+  if (!n || nav.aktiv !== 'folien' || nav.layout === 'breit') return null
   return (
     <div className="auswahl-leiste">
       <button
