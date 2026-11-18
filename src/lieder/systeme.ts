@@ -21,6 +21,8 @@ export type Band = {
   rechts: number
   /** Notenzeilen im System; 0 = Text ohne Noten oder nicht erkannt */
   zeilen: number
+  /** Seite ohne erkannte Notenlinien (Scan): das Band ist die ganze Seite */
+  ganzeSeite?: boolean
 }
 
 export type NotenSeite = {
@@ -205,7 +207,7 @@ export async function notenAnalysieren(daten: Uint8Array): Promise<NotenSeite[]>
           ansicht: view,
           erkannt: false,
           linienabstand: 0,
-          baender: [{ seite: p - 1, oben: Math.max(0, k.y0 - rand), unten: Math.min(Hs, k.y1 + rand), links: Math.max(0, k.x0 - rand), rechts: Math.min(W, k.x1 + rand), zeilen: 0 }],
+          baender: [{ seite: p - 1, oben: Math.max(0, k.y0 - rand), unten: Math.min(Hs, k.y1 + rand), links: Math.max(0, k.x0 - rand), rechts: Math.min(W, k.x1 + rand), zeilen: 0, ganzeSeite: true }],
         })
         continue
       }

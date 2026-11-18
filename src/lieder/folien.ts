@@ -23,18 +23,25 @@ const median = (z: number[]) => {
 }
 
 export function liedFolienPlanen(seiten: NotenSeite[], proFolie: number, f = LIED_FLAECHE): Platz[][] {
-  const baender = seiten.flatMap((s) => s.baender)
-  if (!baender.length) return []
   const h = (b: Band) => b.unten - b.oben
   const w = (b: Band) => b.rechts - b.links
+  // Seiten ohne erkannte Notenlinien (Scans): je eine Folie, so groß wie möglich (Daniel kann später Abschnitte festlegen)
+  const ganzeSeite = (b: Band): Platz[] => {
+    const s = Math.min(f.h / h(b), f.b / w(b))
+    return [{ band: b, x: f.x + (f.b - w(b) * s) / 2, y: f.y, s }]
+  }
+  if (seiten.every((s) => !s.erkannt)) return seiten.flatMap((s) => s.baender).map(ganzeSeite)
+
+  const baender = seiten.flatMap((s) => s.baender)
+  if (!baender.length) return []
   const sp = median(seiten.filter((s) => s.erkannt).map((s) => s.linienabstand)) || 4
   const zwei = baender.filter((b) => b.zeilen === 2).map(h)
   const mitNoten = baender.filter((b) => b.zeilen > 0).map(h)
-  const typ = zwei.length ? median(zwei) : mitNoten.length ? median(mitNoten) : median(baender.map(h))
+  const typ = zwei.length ? median(zwei) : mitNoten.length ? median(mitNoten) : median(baender.filter((b) => !b.ganzeSeite).map(h)) || 120
   // Abstand zwischen zwei Systemen auf der Folie, in Punkten der Notenseite
   const luecke = 2 * sp
   const budget = proFolie * typ + (proFolie - 1) * luecke
-  const breiteMax = Math.max(...baender.filter((b) => b.zeilen > 0).map(w), 1)
+  const breiteMax = Math.max(...baender.filter((b) => b.zeilen > 0 && !b.ganzeSeite).map(w), 1)
   const massstab = Math.min(f.h / budget, f.b / breiteMax)
 
   // Der Reihe nach füllen, solange die Höhe reicht. Eine Folie darf dafür bis zu 8 % kleiner werden, damit knappe
@@ -44,6 +51,13 @@ export function liedFolienPlanen(seiten: NotenSeite[], proFolie: number, f = LIE
   let akt: Band[] = []
   let hoehe = 0
   for (const b of baender) {
+    if (b.ganzeSeite) {
+      if (akt.length) gruppen.push(akt)
+      gruppen.push([b])
+      akt = []
+      hoehe = 0
+      continue
+    }
     const neu = akt.length ? hoehe + luecke + h(b) : h(b)
     if (akt.length && neu > platz) {
       gruppen.push(akt)
@@ -57,6 +71,7 @@ export function liedFolienPlanen(seiten: NotenSeite[], proFolie: number, f = LIE
   if (akt.length) gruppen.push(akt)
 
   return gruppen.map((g) => {
+    if (g.length === 1 && g[0].ganzeSeite) return ganzeSeite(g[0])
     const gh = g.reduce((s, b) => s + h(b), 0) + (g.length - 1) * luecke
     const gw = Math.max(...g.map(w))
     const s = Math.min(massstab, f.h / gh, f.b / gw)
