@@ -1,27 +1,13 @@
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Kreuz } from '../symbole'
+import { ladePdfjs, type Pdfjs } from '../lieder/pdfjs'
 
 // Folienansicht fürs Handy: zeigt das exportierte PDF in der App, eine Folie unter der anderen.
 // iPhone-Web-Apps auf dem Home-Bildschirm öffnen erzeugte Dateien über Links oft nicht; deshalb zeichnet
 // pdf.js (Mozilla) die Seiten hier selbst. pdf.js wird erst beim Öffnen geladen (legacy-Ausgabe, auch für ältere iPhones).
 // Daniel, 11.11.2026: Weg A, keine Ablage in Supabase.
 
-type Pdfjs = typeof import('pdfjs-dist/legacy/build/pdf.mjs')
-
-let pdfjsLaden: Promise<Pdfjs> | null = null
-function ladePdfjs(): Promise<Pdfjs> {
-  pdfjsLaden ??= (async () => {
-    const [pdfjs, worker] = await Promise.all([
-      import('pdfjs-dist/legacy/build/pdf.mjs'),
-      import('pdfjs-dist/legacy/build/pdf.worker.min.mjs?url'),
-    ])
-    pdfjs.GlobalWorkerOptions.workerSrc = worker.default
-    return pdfjs
-  })()
-  pdfjsLaden.catch(() => (pdfjsLaden = null))
-  return pdfjsLaden
-}
 
 type Stand = { art: 'laedt' } | { art: 'bereit'; n: number } | { art: 'fehler'; text: string }
 

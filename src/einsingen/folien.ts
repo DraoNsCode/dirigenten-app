@@ -293,6 +293,34 @@ async function folieGleichGross(
   vermerkZeichnen(doc, vermerk)
 }
 
+// ---------- Liedfolien ----------
+
+/** Ein Lied für die Folien: Kennung, Titel und das Noten-PDF */
+export type LiedQuelle = { kennung: string; titel: string; daten: Uint8Array }
+
+/**
+ * Rahmen einer Liedfolie (Claude, 18.11.2026): Hellgrund und Fußzeile wie bei den Übungen; rechts in der Fußzeile
+ * Lied und Folie („D 77 · ICH KOMME BALD · 1/3“). Kein Titel oben, damit die Noten so groß wie möglich werden.
+ * Die Noten selbst setzt lieder/folien.ts danach als Ausschnitte der Original-Seiten ein.
+ */
+function liedRahmenZeichnen(doc: JsPDF, fuss: string, rechts: string) {
+  doc.setFillColor(FARBE.grund)
+  doc.rect(0, 0, B, H, 'F')
+  const groesse = GROESSEN.fusszeile
+  doc.setFont(SCHMAL, 'normal')
+  doc.setFontSize(groesse)
+  doc.setTextColor(FARBE.grau)
+  doc.text(fuss, RAND, H - 30, { align: 'left', baseline: 'alphabetic', charSpace: groesse * 0.16 })
+  const lat = lateinisch(rechts)
+  doc.setFont(lat ? SCHMAL : NOTEN, 'normal')
+  doc.setFontSize(groesse)
+  const text = lat ? rechts.toLocaleUpperCase('de') : rechts
+  const sperrung = lat ? groesse * 0.16 : 0
+  // Mit Sperrung selbst rechtsbündig setzen (jsPDF rechnet die Sperrung beim Ausrichten nicht mit)
+  const breite = doc.getTextWidth(text) + sperrung * (text.length - 1)
+  doc.text(text, B - RAND - breite, H - 30, { baseline: 'alphabetic', charSpace: sperrung })
+}
+
 // ---------- Deckfolie ----------
 
 export type Deckfolie = { titel: string; datum: Date }
@@ -393,6 +421,8 @@ export async function folienPdf(
   /** Nur zum Vergleichen: jede Folie in mehreren Fassungen, mit Vermerk */
   varianten: Variante[] = [{ groessen: GROESSEN, struktur: STRUKTUR }],
   deckfolie: Deckfolie = { titel: 'Chorprobe', datum: naechsteProbe() },
+  /** Lieder als zweiter Block nach den Übungen (Daniel, 18.11.2026); proFolie: Systeme je Folie */
+  lieder?: { quellen: LiedQuelle[]; proFolie: number },
 ): Promise<Blob> {
   const [{ jsPDF }, { svg2pdf }, abcjs, schriften, logo] = await Promise.all([
     import('jspdf'),
@@ -403,7 +433,21 @@ export async function folienPdf(
     ladeLogo().catch(() => null),
   ])
   const folien = liste.flatMap((f) => varianten.map((v) => ({ f, ...v })))
-  if (!folien.length) throw new Error('Keine Folien')
+  const liedQuellen = lieder?.quellen ?? []
+  if (!folien.length && !liedQuellen.length) throw new Error('Keine Folien')
+
+  // Lieder vorab zerlegen, damit die Zahl der Folien feststeht
+  const liedPlaene = liedQuellen.length
+    ? await (async () => {
+        const [{ notenAnalysieren }, { liedFolienPlanen }] = await Promise.all([import('../lieder/systeme'), import('../lieder/folien')])
+        const r = []
+        for (const q of liedQuellen) {
+          const seiten = await notenAnalysieren(q.daten)
+          r.push({ q, seiten, folien: liedFolienPlanen(seiten, lieder?.proFolie ?? 2) })
+        }
+        return r
+      })()
+    : []
 
   const doc = new jsPDF({ orientation: 'landscape', unit: 'pt', format: [B, H], compress: true })
   schriftenAnmelden(doc, schriften)
@@ -415,7 +459,7 @@ export async function folienPdf(
   halter.setAttribute('aria-hidden', 'true')
   document.body.append(halter)
   try {
-    const m = folien.length + 1
+    const m = folien.length + 1 + liedPlaene.reduce((s, l) => s + l.folien.length, 0)
     fortschritt?.(1, m)
     deckfolieZeichnen(doc, deckfolie, logo)
     for (let i = 0; i < folien.length; i++) {
@@ -425,8 +469,26 @@ export async function folienPdf(
       await zeichne(doc, folien[i].f, folien[i].groessen, folien[i].struktur ?? {}, folien[i].vermerk, { svg2pdf, abcjs, halter, fuss: fusszeile(deckfolie) })
       halter.replaceChildren()
     }
+    // Liedfolien: erst die Rahmen, die Noten setzt danach pdf-lib ein
+    let n = folien.length + 1
+    const einsaetze: { seite: number; quelle: number; plaetze: import('../lieder/folien').Platz[] }[] = []
+    liedPlaene.forEach((l, quelle) => {
+      l.folien.forEach((plaetze, i) => {
+        doc.addPage([B, H], 'landscape')
+        fortschritt?.(++n, m)
+        liedRahmenZeichnen(doc, fusszeile(deckfolie), `${l.q.kennung} · ${l.q.titel} · ${i + 1}/${l.folien.length}`)
+        einsaetze.push({ seite: doc.getNumberOfPages() - 1, quelle, plaetze })
+      })
+    })
+    if (!einsaetze.length) return doc.output('blob')
+    const { notenEinsetzen } = await import('../lieder/folien')
+    const bytes = await notenEinsetzen(
+      doc.output('arraybuffer'),
+      einsaetze,
+      liedPlaene.map((l) => ({ daten: l.q.daten, seiten: l.seiten })),
+    )
+    return new Blob([bytes as BlobPart], { type: 'application/pdf' })
   } finally {
     halter.remove()
   }
-  return doc.output('blob')
 }

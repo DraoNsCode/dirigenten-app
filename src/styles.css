@@ -604,9 +604,21 @@ button.th-stufenkopf { cursor: pointer; }
 .primary.zweit { background: transparent; color: var(--brand); border: 1px solid var(--brand); }
 
 /* ---------- Reiter Folien: schnelle Auswahl (Claudes Vorschlag, 18.11.2026) ---------- */
-.fo-blockkopf { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
-.fo-block { margin: 0; font-family: var(--font-display); font-weight: 700; font-size: 24px; line-height: 1.15; color: var(--ink); }
-.fo-blockkopf .note { margin: 0; }
+/* Umschalter „Übungen | Lieder“ */
+.fo-umschalter { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 12px; background: var(--card); }
+.fo-umschalter button {
+  height: 40px; border: 0; border-radius: 9px; background: transparent; cursor: pointer;
+  font-family: var(--font-body); font-weight: 600; font-size: 16px; color: var(--muted);
+}
+.fo-umschalter button[aria-selected="true"] { background: var(--brand); color: var(--on-brand); }
+@media (hover: hover) and (pointer: fine) { .fo-umschalter button[aria-selected="false"]:hover { color: var(--brand); } }
+.fo-hinweis { margin: -4px 0 0; }
+.fo-lied .listbtn { gap: 8px; }
+.fo-lied .ein-wahl:disabled { opacity: .35; cursor: default; }
+/* Auswahl: Systeme je Folie */
+.fo-systeme { display: flex; flex-direction: column; gap: 6px; margin-top: 8px; }
+.fo-systeme-text { font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--label); }
+.fo-systeme .note { margin: 0; }
 /* Name links, Schalter rechts; bei vielen Stufen rutschen die Schalter unter den Namen */
 .fo-familie { display: flex; flex-wrap: wrap; align-items: center; column-gap: 8px; border-bottom: 1px solid var(--line-soft); }
 .fo-familie .fo-name { flex: 1 1 140px; min-width: 0; width: auto; margin-right: 0; }
