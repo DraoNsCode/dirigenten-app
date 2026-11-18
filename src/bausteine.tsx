@@ -25,6 +25,15 @@ export function Kopf({ eyebrow, titel, klein, rechts }: { eyebrow: string; titel
 export function Zurueck({ text }: { text: string }) {
   const nav = useNav()
   const bereich = useBereich()
+  // Reiter „Folien“ am PC: Rechts steht sonst die Auswahl – der Knopf führt sichtbar dorthin zurück (Daniel, 18.11.2026)
+  if (bereich === 'detail' && nav.aktiv === 'folien') {
+    return (
+      <button className="back" type="button" onClick={nav.zurueck}>
+        <Links size={20} />
+        Auswahl
+      </button>
+    )
+  }
   if (bereich === 'detail') {
     return (
       <button className="back schliessen" type="button" onClick={nav.zurueck}>

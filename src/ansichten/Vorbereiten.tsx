@@ -6,9 +6,11 @@ import { Ladezustand } from '../themen/Teile'
 import type { Familie, Thema } from '../themen/typen'
 
 // Reiter „Übungen“: zum Lesen und Vorbereiten (Daniel, 18.11.2026: Ausgewählt und exportiert wird im Reiter „Folien“).
-// - Je Thema eine Überschrift; „Thema ›“ öffnet die Themenseite. Darunter die Familien; ein Tipp öffnet ihre Seite
-//   (breit: rechts).
-// - Am Ende die Themen ohne Familien als Lesetexte („Zum Lesen“).
+// Gliederung (Claudes Vorschlag vom 18.11.2026, nach Daniels Wunsch „optisch besser strukturiert“):
+// - Je Thema eine Karte. Kopf: Name des Themas und sein Kernsatz; ein Tipp öffnet die Themenseite.
+//   Darunter die Familien; ein Tipp öffnet ihre Seite (breit: rechts).
+// - Am Ende die Themen ohne Familien als Lesetexte, ebenfalls als Karte („Zum Lesen“).
+// - „›“ heißt überall: öffnet eine Seite.
 
 export default function Vorbereiten() {
   const nav = useNav()
@@ -23,69 +25,81 @@ export default function Vorbereiten() {
       <Kopf eyebrow="Vorbereiten" titel="Übungen" />
       <Ladezustand stand={stand} neuLaden={neuLaden} />
 
-      {d &&
-        mitFamilien.map((t) => (
-          <section key={t.id} className="section">
-            <ThemaKopf t={t} aktiv={offen === `thema:${t.id}`} />
-            <ul className="list">
-              {t.familien
-                .map((id) => d.familie.get(id))
-                .filter((f): f is Familie => !!f)
-                .map((f) => (
+      {d && (
+        <div className="ue-themen">
+          {mitFamilien.map((t) => (
+            <section key={t.id} className="ue-thema" aria-label={t.name}>
+              <ThemaKopf t={t} aktiv={offen === `thema:${t.id}`} />
+              <ul className="ue-familien">
+                {t.familien
+                  .map((id) => d.familie.get(id))
+                  .filter((f): f is Familie => !!f)
+                  .map((f) => (
+                    <FamilienZeile key={f.id} f={f} aktiv={offen === `familie:${f.id}`} />
+                  ))}
+              </ul>
+            </section>
+          ))}
+
+          {!!d.ohneThema.length && (
+            <section className="ue-thema" aria-label="Noch ohne Themenseite">
+              <div className="ue-themakopf statisch">
+                <span className="ue-thematext">
+                  <span className="ue-themaname">Noch ohne Themenseite</span>
+                </span>
+              </div>
+              <ul className="ue-familien">
+                {d.ohneThema.map((f) => (
                   <FamilienZeile key={f.id} f={f} aktiv={offen === `familie:${f.id}`} />
                 ))}
-            </ul>
-          </section>
-        ))}
+              </ul>
+            </section>
+          )}
 
-      {!!d?.ohneThema.length && (
-        <section className="section">
-          <h3>Noch ohne Themenseite</h3>
-          <ul className="list">
-            {d.ohneThema.map((f) => (
-              <FamilienZeile key={f.id} f={f} aktiv={offen === `familie:${f.id}`} />
-            ))}
-          </ul>
-        </section>
-      )}
-
-      {!!lesetexte.length && (
-        <section className="section">
-          <h3>Zum Lesen</h3>
-          <ul className="list">
-            {lesetexte.map((t) => (
-              <li key={t.id}>
-                <button
-                  className="listbtn"
-                  type="button"
-                  aria-current={offen === `thema:${t.id}` ? 'true' : undefined}
-                  onClick={() => nav.geh({ v: 'thema', id: t.id })}
-                >
-                  <span className="main">
-                    <span className="title">{t.name}</span>
-                    <span className="meta ein-ziel">{t.kern}</span>
-                  </span>
-                  <Rechts size={16} />
-                </button>
-              </li>
-            ))}
-          </ul>
-        </section>
+          {!!lesetexte.length && (
+            <section className="ue-thema ue-lesen" aria-label="Zum Lesen">
+              <div className="ue-themakopf statisch">
+                <span className="ue-thematext">
+                  <span className="ue-themaname">Zum Lesen</span>
+                  <span className="ue-kern">Hintergrund für die Dirigenten, ohne eigene Übungen</span>
+                </span>
+              </div>
+              <ul className="ue-familien">
+                {lesetexte.map((t) => (
+                  <li key={t.id}>
+                    <button
+                      className="ue-zeile"
+                      type="button"
+                      aria-current={offen === `thema:${t.id}` ? 'true' : undefined}
+                      onClick={() => nav.geh({ v: 'thema', id: t.id })}
+                    >
+                      <span className="main">
+                        <span className="title">{t.name}</span>
+                        <span className="meta ein-ziel">{t.kern}</span>
+                      </span>
+                      <Rechts size={16} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
+        </div>
       )}
     </div>
   )
 }
 
-/** Überschrift eines Themas; „Thema ›“ öffnet die Themenseite */
+/** Kopf einer Themenkarte: Name und Kernsatz; ein Tipp öffnet die Themenseite */
 function ThemaKopf({ t, aktiv }: { t: Thema; aktiv: boolean }) {
   const nav = useNav()
   return (
-    <button type="button" className="th-listenkopf" aria-current={aktiv ? 'true' : undefined} onClick={() => nav.geh({ v: 'thema', id: t.id })}>
-      <span className="th-listenkopf-name">{t.name}</span>
-      <span className="th-listenkopf-verweis">
-        Thema
-        <Rechts size={14} />
+    <button type="button" className="ue-themakopf" aria-current={aktiv ? 'true' : undefined} onClick={() => nav.geh({ v: 'thema', id: t.id })}>
+      <span className="ue-thematext">
+        <span className="ue-themaname">{t.name}</span>
+        {t.kern && <span className="ue-kern">{t.kern}</span>}
       </span>
+      <Rechts size={18} />
     </button>
   )
 }
@@ -102,7 +116,7 @@ function FamilienZeile({ f, aktiv }: { f: Familie; aktiv: boolean }) {
   const nav = useNav()
   return (
     <li>
-      <button className="listbtn" type="button" aria-current={aktiv ? 'true' : undefined} onClick={() => nav.geh({ v: 'familie', id: f.id })}>
+      <button className="ue-zeile" type="button" aria-current={aktiv ? 'true' : undefined} onClick={() => nav.geh({ v: 'familie', id: f.id })}>
         <span className="main">
           <span className="title">{f.name}</span>
           <span className="meta ein-ziel">{familienZusatz(f)}</span>

@@ -119,8 +119,13 @@ function Hauptansicht({ email }: { email: string }) {
   /** Scrollstand je Stapelplatz, damit eine Ansicht beim Zurückgehen dort steht, wo man sie verlassen hat */
   const scrollMerker = useRef<number[]>([])
   const scrollZiel = useRef<number | null>(null)
-  /** Eintrag, der nach dem Zurückspulen des Verlaufs (Reiterwechsel) gesetzt wird */
-  const ruecksetzen = useRef<VerlaufsEintrag | null>(null)
+  /** Einträge, die nach dem Zurückspulen des Verlaufs (Reiterwechsel) gesetzt werden – je Ebene des Stapels einer */
+  const ruecksetzen = useRef<VerlaufsEintrag[] | null>(null)
+  /** Je Reiter der zuletzt offene Stapel mit Scrollstand: Beim Zurückkehren in einen Reiter ist alles wie verlassen
+   *  (Daniel, 18.11.2026: in „Übungen“ lesen und in „Folien“ auswählen, parallel) */
+  const gemerkt = useRef<Partial<Record<Reiter, { stapel: Ansicht[]; scroll: number[]; oben: number; detail: number }>>>({})
+  const wiederScroll = useRef<{ oben: number; detail: number } | null>(null)
+  const detailRef = useRef<HTMLElement>(null)
   /** Jeder Neubeginn (Start, Reiterwechsel) ist eine neue Generation; ältere Einträge (z. B. „vorwärts“
    *  in einen verlassenen Reiter) werden nicht angezeigt */
   const generation = useRef(Date.now())
@@ -158,19 +163,23 @@ function Hauptansicht({ email }: { email: string }) {
     setze(aktuell.current.reiter, s)
   }, [setze])
 
-  /** Neu beginnen (Reiterwechsel, Sprung in eine Woche): keine Zurück-Schritte */
-  const neuBeginnen = useCallback((r: Reiter, s: Ansicht[]) => {
+  /** Neu beginnen (Reiterwechsel, Sprung in eine Woche): Der Verlauf enthält danach genau die Ebenen von `s` –
+   *  bei einem gemerkten Stapel führt Zurück also wieder Ebene für Ebene zur Liste des Reiters */
+  const neuBeginnen = useCallback((r: Reiter, s: Ansicht[], scroll: number[] = []) => {
     setze(r, s)
-    scrollMerker.current = []
+    scrollMerker.current = scroll
     if (!MIT_VERLAUF) return
     generation.current += 1
-    const e = eintrag(0, r, s)
+    const eintraege = s.map((_, i) => eintrag(i, r, s.slice(0, i + 1)))
     const d = tiefe.current
-    tiefe.current = 0
+    tiefe.current = s.length - 1
     if (d > 0) {
-      ruecksetzen.current = e
+      ruecksetzen.current = eintraege
       history.go(-d)
-    } else history.replaceState(e, '')
+    } else {
+      history.replaceState(eintraege[0], '')
+      for (const e of eintraege.slice(1)) history.pushState(e, '')
+    }
   }, [setze])
 
   const zurueck = useCallback(() => {
@@ -203,7 +212,8 @@ function Hauptansicht({ email }: { email: string }) {
       const z = ruecksetzen.current
       if (z) {
         ruecksetzen.current = null
-        history.replaceState(z, '')
+        history.replaceState(z[0], '')
+        for (const x of z.slice(1)) history.pushState(x, '')
         return
       }
       if (!istEintrag(e.state)) return
@@ -246,14 +256,47 @@ function Hauptansicht({ email }: { email: string }) {
     scrollZiel.current = null
   }, [stapel, layout])
 
-  // Erneutes Tippen auf den aktiven Reiter führt ganz nach oben (bzw. schließt erst eine geöffnete Ansicht)
+  /** Stapel und Scrollstand des offenen Reiters merken, bevor ein anderer Reiter kommt */
+  const merkeReiter = () => {
+    merkeScroll()
+    gemerkt.current[aktuell.current.reiter] = {
+      stapel: aktuell.current.stapel,
+      scroll: [...scrollMerker.current],
+      oben: ansicht.current?.scrollTop ?? 0,
+      detail: detailRef.current?.scrollTop ?? 0,
+    }
+  }
+
+  // Erneutes Tippen auf den aktiven Reiter führt ganz nach oben (bzw. schließt erst eine geöffnete Ansicht).
+  // Ein anderer Reiter öffnet sich so, wie man ihn verlassen hat (Stapel und Scrollstand).
   const wechsleReiter = useCallback((r: Reiter) => {
-    if (r === aktuell.current.reiter && aktuell.current.stapel.length === 1) {
-      ansicht.current?.scrollTo({ top: 0, behavior: 'smooth' })
+    const alt = aktuell.current.reiter
+    if (r === alt) {
+      if (aktuell.current.stapel.length === 1) {
+        ansicht.current?.scrollTo({ top: 0, behavior: 'smooth' })
+        return
+      }
+      delete gemerkt.current[r]
+      neuBeginnen(r, [START[r]])
       return
     }
-    neuBeginnen(r, [START[r]])
+    merkeReiter()
+    const g = gemerkt.current[r]
+    if (g) {
+      wiederScroll.current = { oben: g.oben, detail: g.detail }
+      neuBeginnen(r, g.stapel, g.scroll)
+    } else neuBeginnen(r, [START[r]])
   }, [neuBeginnen])
+
+  // Nach dem Wechsel in einen gemerkten Reiter: Liste bzw. Ansicht (und breit die rechte Seite) dorthin scrollen,
+  // wo man sie verlassen hat
+  useLayoutEffect(() => {
+    const w = wiederScroll.current
+    if (!w) return
+    wiederScroll.current = null
+    if (ansicht.current) ansicht.current.scrollTop = w.oben
+    if (detailRef.current) detailRef.current.scrollTop = w.detail
+  }, [reiter])
 
   const wurzel = stapel[0]
   const oben = stapel[stapel.length - 1]
@@ -278,6 +321,8 @@ function Hauptansicht({ email }: { email: string }) {
       aktiv: reiter,
       zurWoche: (datum) => {
         setWoche(wochenAbstand(datum, heute()))
+        if (aktuell.current.reiter !== 'woche') merkeReiter()
+        delete gemerkt.current.woche
         neuBeginnen('woche', [START.woche])
       },
       woche,
@@ -352,7 +397,7 @@ function Hauptansicht({ email }: { email: string }) {
               </main>
             </BereichKontext.Provider>
             <BereichKontext.Provider value="detail">
-              <section className="view detail-bereich" key={detail ? schluessel(detail) : 'leer'} aria-label="Details">
+              <section className="view detail-bereich" key={detail ? schluessel(detail) : 'leer'} aria-label="Details" ref={detailRef}>
                 {/* Reiter „Folien“: rechts steht ohne andere Ansicht immer die Auswahl mit dem Export */}
                 <div className="inhalt">
                   {detail ? zeige(detail) : reiter === 'folien' ? <ProbeAuswahl fest /> : <LeererBereich reiter={reiter} />}
