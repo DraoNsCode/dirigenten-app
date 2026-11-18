@@ -4,7 +4,6 @@ import { useNav, type Ansicht } from '../navigation'
 import { Folien, Haken, Plus, Rechts, Runter } from '../symbole'
 import { Fehlerkarte } from '../bausteine'
 import { useThemenAuswahl } from './auswahl'
-import { useLiederAuswahl } from '../lieder/auswahl'
 import type { InhaltStand } from './daten'
 import type { Wahl } from './folie'
 
@@ -94,9 +93,8 @@ export function ThemenWahlKnopf({ wahl, name }: { wahl: Wahl; name: string }) {
 /** Leiste unten im Reiter „Folien“, solange etwas ausgewählt ist. Breit nicht: Dort steht die Auswahl rechts. */
 export function ThemenLeiste() {
   const auswahl = useThemenAuswahl()
-  const lieder = useLiederAuswahl()
   const nav = useNav()
-  const n = auswahl.schluessel.length + lieder.ids.length
+  const n = auswahl.schluessel.length
   if (!n || nav.aktiv !== 'folien' || nav.layout === 'breit') return null
   return (
     <div className="auswahl-leiste">

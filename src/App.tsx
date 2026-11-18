@@ -37,7 +37,6 @@ import ThemaSeite from './ansichten/ThemaSeite'
 import FamilieSeite from './ansichten/FamilieSeite'
 import { InhaltProvider } from './themen/daten'
 import { ThemenAuswahlProvider } from './themen/auswahl'
-import { LiederAuswahlProvider } from './lieder/auswahl'
 import ProbeAuswahl from './ansichten/ProbeAuswahl'
 import FolienListe from './ansichten/Folien'
 import { IST_IOS, useZurueckWischen, VERSATZ } from './wischen'
@@ -90,9 +89,7 @@ export default function App() {
           <AuswahlProvider>
             <InhaltProvider>
               <ThemenAuswahlProvider>
-                <LiederAuswahlProvider>
-                  <Hauptansicht email={sitzung.user.email ?? ''} />
-                </LiederAuswahlProvider>
+                <Hauptansicht email={sitzung.user.email ?? ''} />
               </ThemenAuswahlProvider>
             </InhaltProvider>
           </AuswahlProvider>
