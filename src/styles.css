@@ -663,9 +663,7 @@ button.th-stufenkopf { cursor: pointer; }
 .fo-thema ul.list li:last-child { border-bottom: 0; }
 @media (hover: hover) and (pointer: fine) { .fo-themakopf:hover { background: var(--surface2); } }
 
-/* Auswählen auch im Reiter „Übungen“ (Daniel, 18.11.2026) */
-.ue-mitwahl { display: flex; align-items: center; padding-right: 12px; }
-.ue-mitwahl .ue-zeile { flex: 1; min-width: 0; padding-right: 8px; }
+/* Zahl der ausgewählten Übungen am Reiter „Folien“ (Claude, 18.11.2026) */
 .tab { position: relative; }
 .tab-zahl {
   position: absolute; top: 5px; left: calc(50% + 7px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px;

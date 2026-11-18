@@ -2,9 +2,7 @@ import { Kopf } from '../bausteine'
 import { useNav } from '../navigation'
 import { Rechts } from '../symbole'
 import { useInhalt } from '../themen/daten'
-import { Ladezustand, ThemenWahlKnopf } from '../themen/Teile'
-import { useThemenAuswahl } from '../themen/auswahl'
-import { gewaehltText } from '../themen/folie'
+import { Ladezustand } from '../themen/Teile'
 import type { Familie, Thema } from '../themen/typen'
 
 // Reiter „Übungen“: zum Lesen und Vorbereiten (Daniel, 18.11.2026: Ausgewählt und exportiert wird im Reiter „Folien“).
@@ -12,9 +10,8 @@ import type { Familie, Thema } from '../themen/typen'
 // - Je Thema eine Karte. Kopf: Name des Themas und sein Kernsatz; ein Tipp öffnet die Themenseite.
 //   Darunter die Familien; ein Tipp öffnet ihre Seite (breit: rechts).
 // - Am Ende die Themen ohne Familien als Lesetexte, ebenfalls als Karte („Zum Lesen“).
-// - „›“ heißt überall: öffnet eine Seite. Rechts daneben „+“: wählt die Grundübung für die Probenfolien aus
-//   (Daniel, 18.11.2026: auswählen auch im Reiter „Übungen“, „einfach überall das Plus“); Stufen auf der Familienseite.
-//   Unter dem Namen steht in Gold, was von der Familie ausgewählt ist.
+// - „›“ heißt überall: öffnet eine Seite. Ausgewählt wird nicht in der Liste, sondern auf der geöffneten Übung
+//   (Familienseite) – Daniel, 18.11.2026.
 
 export default function Vorbereiten() {
   const nav = useNav()
@@ -115,23 +112,18 @@ export function familienZusatz(f: Familie): string {
   return teile.length ? teile.join(' · ') : f.grund.ziel
 }
 
-/** Eine Familie; ein Tipp öffnet ihre Seite, „+“ wählt die Grundübung aus */
+/** Eine Familie; ein Tipp öffnet ihre Seite */
 function FamilienZeile({ f, aktiv }: { f: Familie; aktiv: boolean }) {
   const nav = useNav()
-  const auswahl = useThemenAuswahl()
-  const gewaehlt = auswahl.vonFamilie(f.id)
   return (
-    <li className="ue-mitwahl">
+    <li>
       <button className="ue-zeile" type="button" aria-current={aktiv ? 'true' : undefined} onClick={() => nav.geh({ v: 'familie', id: f.id })}>
         <span className="main">
           <span className="title">{f.name}</span>
-          <span className={'meta ein-ziel' + (gewaehlt.length ? ' pr-gewaehlt' : '')}>
-            {gewaehlt.length ? gewaehltText(f, gewaehlt) : familienZusatz(f)}
-          </span>
+          <span className="meta ein-ziel">{familienZusatz(f)}</span>
         </span>
         <Rechts size={16} />
       </button>
-      <ThemenWahlKnopf wahl={{ familie: f.id, einheit: 'grund' }} name={`${f.name}, Grundübung`} />
     </li>
   )
 }

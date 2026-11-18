@@ -11,7 +11,8 @@ import type { Angaben, Folie, Stufe } from '../themen/typen'
 // Familienseite: die Grundübung in der Lesereihenfolge des Dirigenten – Noten, Ziel, Ansage,
 // „Gelingt, wenn“, typischer Fehler –, darunter die Stufen. Eine Stufe zeigt, was sich ändert; hat sie eigene
 // Noten, Texte oder eine eigene Folie, lässt sie sich aufklappen. Die Grundübung (Knopf neben dem Titel) und jede Stufe
-// lassen sich in beiden Reitern für die Probenfolien auswählen (Daniel, 18.11.2026: „einfach überall das Plus“).
+// lassen sich in beiden Reitern für die Probenfolien auswählen; im Reiter „Übungen“ nur hier auf der geöffneten
+// Übung, nicht in der Liste (Daniel, 18.11.2026).
 // Aus der Auswahl geöffnet (stufe), steht die gewählte Stufe offen und markiert da, und die Seite rückt zu ihr
 // (Daniel, 18.11.2026).
 
