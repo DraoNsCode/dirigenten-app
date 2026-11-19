@@ -26,7 +26,7 @@ export default function Menue({ email }: { email: string }) {
             <Wochen />
             <span className="main">
               <span className="t">Wochenübersicht</span>
-              <span className="d">Kalenderwochen der nächsten drei Monate; antippen führt in die Woche</span>
+              <span className="d">Kalenderwochen dieses Monats und der nächsten drei; antippen führt in die Woche</span>
             </span>
             <Rechts size={18} />
           </button>

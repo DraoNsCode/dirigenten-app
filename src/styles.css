@@ -674,7 +674,8 @@ button.th-stufenkopf { cursor: pointer; }
 
 /* ---------- Wochenübersicht (Daniel, 19.11.2026) ---------- */
 .wochen-gruppe { display: flex; flex-direction: column; gap: 4px; }
-.wochen-gruppe h3 { margin: 10px 0 2px; font-family: var(--font-label); font-weight: 600; font-size: 17px; letter-spacing: .12em; text-transform: uppercase; color: var(--label); }
+/* wie die Thementitel im Reiter „Übungen“ (Daniel, 19.11.2026) */
+.wochen-gruppe h3 { margin: 12px 0 2px; font-family: var(--font-display); font-weight: 700; font-size: 22px; line-height: 1.15; color: var(--ink); }
 .num.kw { width: 52px; font-size: 15px; white-space: nowrap; }
 .diese-woche { font-size: 13px; color: var(--label); font-weight: 600; }
 .wochen-stand { display: inline-flex; align-items: center; gap: 4px; color: var(--label); font-weight: 500; }

@@ -15,19 +15,21 @@ import { useNav } from '../navigation'
 import { Haken, Rechts } from '../symbole'
 
 // Wochenübersicht (Daniel, 19.11.2026): ersetzt die Menüpunkte „Gottesdienste“ und „Proben“.
-// Liste nach Kalenderwochen mit Datum von–bis, 2 Wochen zurück und 3 Monate voraus, nach Monaten gegliedert.
+// Liste nach Kalenderwochen mit Datum von–bis, nach Monaten gegliedert: aktueller Monat und die nächsten drei vollen
+// Monate (Daniel, 19.11.2026; vorher 2 Wochen zurück und 3 Monate voraus).
 // Ein kurzer Hinweis zeigt, ob in einer Woche schon etwas eingetragen ist. Antippen öffnet die Woche im Wochenplan.
 // Erreichbar über das Menü und über ein kleines Symbol im Kopf des Wochenplans.
 // Name „Wochenübersicht“: Claudes Vorschlag (Daniel: „Kalender oder etwas Besseres“), noch nicht beurteilt.
 
-const ZURUECK = 2
 const MONATE_VORAUS = 3
 
+/** Wochen des aktuellen Monats und der nächsten drei vollen Monate (Monat einer Woche = Monat ihres Donnerstags) */
 function wochen() {
   const jetzt = heute()
-  const ende = new Date(jetzt.getFullYear(), jetzt.getMonth() + MONATE_VORAUS, jetzt.getDate())
+  const ersterTag = new Date(jetzt.getFullYear(), jetzt.getMonth(), 1)
+  const letzterTag = new Date(jetzt.getFullYear(), jetzt.getMonth() + MONATE_VORAUS + 1, 0)
   const r: Date[] = []
-  for (let m = plusTage(montagVon(jetzt), -7 * ZURUECK); m <= ende; m = plusTage(m, 7)) r.push(m)
+  for (let m = montagVon(ersterTag); plusTage(m, 3) <= letzterTag; m = plusTage(m, 7)) if (plusTage(m, 3) >= ersterTag) r.push(m)
   return r
 }
 
@@ -67,7 +69,7 @@ export default function Wochen() {
           </ul>
         </section>
       ))}
-      <p className="note">2 Wochen zurück und 3 Monate voraus. Antippen öffnet die Woche im Wochenplan.</p>
+      <p className="note">Aktueller Monat und die nächsten drei Monate. Antippen öffnet die Woche im Wochenplan.</p>
     </>
   )
 }
