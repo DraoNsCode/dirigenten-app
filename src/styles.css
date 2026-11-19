@@ -674,7 +674,7 @@ button.th-stufenkopf { cursor: pointer; }
 
 /* ---------- Wochenübersicht (Daniel, 19.11.2026) ---------- */
 .wochen-gruppe { display: flex; flex-direction: column; gap: 4px; }
-.wochen-gruppe h3 { margin: 6px 0 0; font-family: var(--font-label); font-weight: 600; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; color: var(--label); }
+.wochen-gruppe h3 { margin: 10px 0 2px; font-family: var(--font-label); font-weight: 600; font-size: 17px; letter-spacing: .12em; text-transform: uppercase; color: var(--label); }
 .num.kw { width: 52px; font-size: 15px; white-space: nowrap; }
 .diese-woche { font-size: 13px; color: var(--label); font-weight: 600; }
 .wochen-stand { display: inline-flex; align-items: center; gap: 4px; color: var(--label); font-weight: 500; }
