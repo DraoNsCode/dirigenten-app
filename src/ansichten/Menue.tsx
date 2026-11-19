@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { Kopf } from '../bausteine'
 import { useNav } from '../navigation'
 import { supabase } from '../supabase'
-import { Abmelden, Datei, Kalender, Noten, Plus, Rechts } from '../symbole'
+import { Abmelden, Datei, Plus, Rechts, Wochen } from '../symbole'
 
 declare const __STAND__: string
 
@@ -22,21 +22,11 @@ export default function Menue({ email }: { email: string }) {
 
       <ul className="menu">
         <li>
-          <button className="menubtn" type="button" onClick={() => nav.geh({ v: 'liste', art: 'gd' })}>
-            <Kalender />
+          <button className="menubtn" type="button" onClick={() => nav.geh({ v: 'wochen' })}>
+            <Wochen />
             <span className="main">
-              <span className="t">Gottesdienste</span>
-              <span className="d">Liste aller Gottesdienste; antippen führt in die Woche zum Nachtragen oder Korrigieren</span>
-            </span>
-            <Rechts size={18} />
-          </button>
-        </li>
-        <li>
-          <button className="menubtn" type="button" onClick={() => nav.geh({ v: 'liste', art: 'pr' })}>
-            <Noten />
-            <span className="main">
-              <span className="t">Proben</span>
-              <span className="d">Liste aller Proben; antippen führt in die Woche</span>
+              <span className="t">Wochenübersicht</span>
+              <span className="d">Kalenderwochen der nächsten drei Monate; antippen führt in die Woche</span>
             </span>
             <Rechts size={18} />
           </button>

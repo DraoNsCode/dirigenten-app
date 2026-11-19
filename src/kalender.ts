@@ -134,3 +134,30 @@ export function wochenTitel(montag: Date) {
 /** Abstand in Wochen zwischen den Wochen zweier Tage */
 export const wochenAbstand = (d: Date, bezug: Date) =>
   Math.round((montagVon(d).getTime() - montagVon(bezug).getTime()) / (7 * 864e5))
+
+/** Kalenderwoche nach ISO 8601 (Woche mit dem ersten Donnerstag des Jahres ist KW 1) */
+export function kalenderwoche(d: Date) {
+  const donnerstag = plusTage(montagVon(d), 3)
+  const erster = new Date(donnerstag.getFullYear(), 0, 1)
+  return Math.floor(Math.round((donnerstag.getTime() - erster.getTime()) / 864e5) / 7) + 1
+}
+
+/** Monat (0–11) und Jahr, zu dem eine Woche gehört: der Monat ihres Donnerstags */
+export const wochenMonat = (montag: Date) => {
+  const d = plusTage(montag, 3)
+  return { monat: d.getMonth(), jahr: d.getFullYear(), name: MONATE[d.getMonth()] }
+}
+
+/** „21.–27. Dezember“, „28. Dezember – 3. Januar“ */
+export const wochenSpanne = (montag: Date) => wochenTitel(montag).replace(/^Woche /, '')
+
+/** Namen der besonderen Tage einer Woche (Feiertage, Palm-, Oster-, Pfingstsonntag) */
+export function besondereTage(montag: Date): string[] {
+  const namen: string[] = []
+  for (const e of ereignisseDerWoche(montag)) {
+    if (e.art === 'pr' || e.name.startsWith('Gottesdienst')) continue
+    const n = e.name.replace(/ (vormittags|nachmittags)$/, '')
+    if (!namen.includes(n)) namen.push(n)
+  }
+  return namen
+}

@@ -176,3 +176,13 @@ export function Folien({ size = 22 }: Props) {
     </svg>
   )
 }
+
+/** Kalender mit Zeilen: Wochenübersicht */
+export function Wochen({ size = 22 }: Props) {
+  return (
+    <svg {...basis(size)}>
+      <rect x="3" y="5" width="18" height="16" rx="2" />
+      <path d="M8 3v4M16 3v4M7 11h10M7 14.5h10M7 18h6" />
+    </svg>
+  )
+}

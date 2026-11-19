@@ -8,7 +8,8 @@ export type Ansicht =
   | { v: 'uebernehmen'; ev: string }
   | { v: 'lieder' }
   | { v: 'menue' }
-  | { v: 'liste'; art: 'gd' | 'pr' }
+  /** Wochenübersicht: Liste der Kalenderwochen (Menü und Symbol im Wochenplan) */
+  | { v: 'wochen' }
   | { v: 'lied'; id: number }
   | { v: 'neu' }
   // bisherige Übungssammlung (über das Menü)

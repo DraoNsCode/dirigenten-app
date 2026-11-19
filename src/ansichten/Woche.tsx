@@ -4,7 +4,7 @@ import { kennung, useDaten } from '../daten'
 import { ereignisseDerWoche, ereignisTitel, heute, montagVon, plusTage, terminKurz, wochenTitel, type Ereignis } from '../kalender'
 import { useMeldung } from '../meldung'
 import { useNav } from '../navigation'
-import { Kreuz, Links, Plus, Rechts, Uebernehmen } from '../symbole'
+import { Kreuz, Links, Plus, Rechts, Uebernehmen, Wochen } from '../symbole'
 import { useZiehen, vorschau, type Geist as GeistDaten, type Griff, type Zug } from './ziehen'
 
 // Startseite „Wochenplan“: alle Termine einer Woche in Datumsreihenfolge.
@@ -56,6 +56,16 @@ export default function Woche() {
 
   const wochenwahl = (
     <div className="weekrow">
+      <button
+        className="iconbtn"
+        type="button"
+        aria-label="Wochenübersicht"
+        title="Wochenübersicht"
+        aria-pressed={nav.detail?.v === 'wochen' ? true : undefined}
+        onClick={() => (nav.detail?.v === 'wochen' ? nav.zurueck() : nav.geh({ v: 'wochen' }))}
+      >
+        <Wochen size={21} />
+      </button>
       <button className="iconbtn" type="button" aria-label="Vorherige Woche" onClick={() => nav.setWoche(nav.woche - 1)}>
         <Links />
       </button>

@@ -23,7 +23,7 @@ import Suche from './ansichten/Suche'
 import Uebernehmen from './ansichten/Uebernehmen'
 import Lieder from './ansichten/Lieder'
 import Menue from './ansichten/Menue'
-import Liste from './ansichten/Liste'
+import Wochen from './ansichten/Wochen'
 import LiedSeite from './ansichten/LiedSeite'
 import LiedNeu from './ansichten/LiedNeu'
 import Uebungen from './ansichten/Uebungen'
@@ -363,8 +363,8 @@ function Hauptansicht({ email }: { email: string }) {
         return <Lieder />
       case 'menue':
         return <Menue email={email} />
-      case 'liste':
-        return <Liste art={a.art} />
+      case 'wochen':
+        return <Wochen />
       case 'lied':
         return <LiedSeite key={a.id} id={a.id} />
       case 'neu':
@@ -390,7 +390,7 @@ function Hauptansicht({ email }: { email: string }) {
     }
   }
 
-  const schluessel = (a: Ansicht) => `${a.v}-${'ev' in a ? a.ev : 'id' in a ? a.id : 'art' in a ? a.art : ''}`
+  const schluessel = (a: Ansicht) => `${a.v}-${'ev' in a ? a.ev : 'id' in a ? a.id : ''}`
 
   return (
     <NavKontext.Provider value={nav}>
@@ -448,7 +448,7 @@ function LeererBereich({ reiter }: { reiter: Reiter }) {
     uebungen: 'Ein Thema oder eine Familie antippen, um es hier zu lesen.',
     folien: '',
     sammlung: 'Eine Übung oder Erklärung auswählen, um sie hier zu lesen.',
-    menue: 'Gottesdienste, Proben oder „Lied hinzufügen“ wählen.',
+    menue: 'Wochenübersicht oder „Lied hinzufügen“ wählen.',
   }
   return (
     <div className="leer-bereich">
